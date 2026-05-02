@@ -97,6 +97,9 @@ export type Database = {
           direccion: string;
           fecha_inicio: string;
           id: string;
+          imagen_url: string | null;
+          latitud: number | null;
+          longitud: number | null;
           publicado: boolean;
           tcg_juego: Database["public"]["Enums"]["tcg_juego"];
           tienda_id: string;
@@ -113,6 +116,9 @@ export type Database = {
           direccion: string;
           fecha_inicio: string;
           id?: string;
+          imagen_url?: string | null;
+          latitud?: number | null;
+          longitud?: number | null;
           publicado?: boolean;
           tcg_juego: Database["public"]["Enums"]["tcg_juego"];
           tienda_id: string;
@@ -129,6 +135,9 @@ export type Database = {
           direccion?: string;
           fecha_inicio?: string;
           id?: string;
+          imagen_url?: string | null;
+          latitud?: number | null;
+          longitud?: number | null;
           publicado?: boolean;
           tcg_juego?: Database["public"]["Enums"]["tcg_juego"];
           tienda_id?: string;

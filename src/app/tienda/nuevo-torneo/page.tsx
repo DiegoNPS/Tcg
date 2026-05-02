@@ -3,19 +3,7 @@ import { redirect } from "next/navigation";
 import { TorneoForm } from "@/components/forms/torneo-form";
 import { createClient } from "@/lib/supabase/server";
 
-type NuevoTorneoPageProps = {
-  searchParams: Promise<{ error?: string | string[] }>;
-};
-
-const formErrorMessages: Record<string, string> = {
-  "datos-invalidos": "Revisa los campos del formulario.",
-  "fecha-invalida": "La fecha ingresada no es valida.",
-  "no-se-pudo-crear": "No se pudo crear el torneo. Intenta nuevamente.",
-};
-
-export default async function NuevoTorneoPage({ searchParams }: NuevoTorneoPageProps) {
-  const params = await searchParams;
-  const errorCode = Array.isArray(params.error) ? params.error[0] : params.error;
+export default async function NuevoTorneoPage() {
 
   let supabase: Awaited<ReturnType<typeof createClient>>;
 
@@ -59,7 +47,7 @@ export default async function NuevoTorneoPage({ searchParams }: NuevoTorneoPageP
         </p>
       </header>
 
-      <TorneoForm errorMessage={errorCode ? formErrorMessages[errorCode] : undefined} />
+      <TorneoForm />
     </main>
   );
 }
