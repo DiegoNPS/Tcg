@@ -27,31 +27,31 @@ export function DireccionAutocomplete({
 
   // Show map for pre-existing coords (edit mode)
   useEffect(() => {
-    if (!coords || !mapRef.current || !window.google) return;
-    const map = new window.google.maps.Map(mapRef.current, {
+    if (!coords || !mapRef.current || typeof google === "undefined") return;
+    const map = new google.maps.Map(mapRef.current, {
       center: coords,
       zoom: 16,
       disableDefaultUI: true,
       zoomControl: true,
     });
-    new window.google.maps.Marker({ position: coords, map });
+    new google.maps.Marker({ position: coords, map });
   }, [coords]);
 
   function initAutocomplete() {
-    if (!inputRef.current || !window.google) return;
+    if (!inputRef.current || typeof google === "undefined") return;
 
     // If we already have coords from edit mode, render the map now
     if (coords && mapRef.current) {
-      const map = new window.google.maps.Map(mapRef.current, {
+      const map = new google.maps.Map(mapRef.current, {
         center: coords,
         zoom: 16,
         disableDefaultUI: true,
         zoomControl: true,
       });
-      new window.google.maps.Marker({ position: coords, map });
+      new google.maps.Marker({ position: coords, map });
     }
 
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "cl" },
       fields: ["formatted_address", "address_components", "geometry"],
       types: ["address"],
@@ -79,13 +79,13 @@ export function DireccionAutocomplete({
       setCoords({ lat, lng });
 
       if (!mapRef.current) return;
-      const map = new window.google.maps.Map(mapRef.current, {
+      const map = new google.maps.Map(mapRef.current, {
         center: { lat, lng },
         zoom: 16,
         disableDefaultUI: true,
         zoomControl: true,
       });
-      new window.google.maps.Marker({ position: { lat, lng }, map });
+      new google.maps.Marker({ position: { lat, lng }, map });
     });
   }
 
