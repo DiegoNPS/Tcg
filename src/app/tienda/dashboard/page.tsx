@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardPageProps = {
-  searchParams: Promise<{ created?: string; error?: string }>;
+  searchParams: Promise<{ created?: string; updated?: string; error?: string }>;
 };
 
 const errorMessages: Record<string, string> = {
@@ -94,6 +95,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </p>
       ) : null}
 
+      {params.updated === "1" ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          Torneo actualizado correctamente.
+        </p>
+      ) : null}
+
       {errorMessage ? (
         <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {errorMessage}
@@ -114,7 +121,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     {torneo.tcg_juego} / {torneo.categoria} / {torneo.ciudad}
                   </p>
                 </div>
-                <p className="text-zinc-500">{new Date(torneo.fecha_inicio).toLocaleString("es-ES")}</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-zinc-500">{new Date(torneo.fecha_inicio).toLocaleString("es-ES")}</p>
+                  <Link
+                    href={`/tienda/torneos/${torneo.id}/editar`}
+                    className="flex items-center gap-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition hover:bg-zinc-50"
+                  >
+                    <Pencil size={12} />
+                    Editar
+                  </Link>
+                </div>
               </article>
             ))
           ) : (

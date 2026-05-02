@@ -19,18 +19,30 @@ const TCG_VALUES = [
 const CATEGORIA_VALUES = ["local", "regional", "premier", "casual"] as const;
 
 const crearTorneoSchema = z.object({
-  titulo: z.string().trim().min(4).max(100),
-  descripcion: z.string().trim().min(10).max(1200),
+  titulo: z.string().trim().min(1).max(100),
+  descripcion: z.string().trim().min(1).max(1200),
   tcg_juego: z.enum(TCG_VALUES),
   categoria: z.enum(CATEGORIA_VALUES),
-  ciudad: z.string().trim().min(2).max(100),
-  direccion: z.string().trim().min(5).max(180),
-  fecha_inicio: z.string().min(1),
-  cupo_maximo: z.coerce.number().int().min(2).max(1024),
-  costo_entrada: z.coerce.number().min(0).max(1_000_000),
+  ciudad: z.string().trim().min(1).max(100),
+  direccion: z.string().trim().min(1).max(500),
+  fecha_inicio: z.string().min(1, "La fecha es requerida"),
+  cupo_maximo: z.coerce.number().int().min(2, "Mínimo 2 jugadores").max(1024),
+  costo_entrada: z.coerce.number().min(0, "No puede ser negativo").max(1_000_000),
+  publicado: z.coerce.boolean().optional(),
+  latitud: z.coerce.number().optional(),
+  longitud: z.coerce.number().optional(),
+  imagen_url: z.string().optional(),
 });
 
-export async function crearTorneo(formData: FormData) {
+export type CrearTorneoState = {
+  fieldErrors?: Partial<Record<keyof z.infer<typeof crearTorneoSchema>, string>>;
+  error?: string;
+};
+
+export async function crearTorneo(
+  _prev: CrearTorneoState,
+  formData: FormData,
+): Promise<CrearTorneoState> {
   const supabase = await createClient();
 
   const {
@@ -48,7 +60,7 @@ export async function crearTorneo(formData: FormData) {
     .maybeSingle();
 
   if (tiendaError) {
-    throw new Error(tiendaError.message);
+    return { error: "Error al verificar la tienda. Intenta nuevamente." };
   }
 
   if (!tienda) {
@@ -58,13 +70,18 @@ export async function crearTorneo(formData: FormData) {
   const parsed = crearTorneoSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
-    redirect("/tienda/nuevo-torneo?error=datos-invalidos");
+    const fieldErrors: CrearTorneoState["fieldErrors"] = {};
+    for (const [key, issues] of Object.entries(parsed.error.flatten().fieldErrors)) {
+      const first = issues?.[0];
+      if (first) fieldErrors[key as keyof typeof fieldErrors] = first;
+    }
+    return { fieldErrors };
   }
 
   const fecha = new Date(parsed.data.fecha_inicio);
 
   if (Number.isNaN(fecha.getTime())) {
-    redirect("/tienda/nuevo-torneo?error=fecha-invalida");
+    return { fieldErrors: { fecha_inicio: "Fecha no válida" } };
   }
 
   const { error } = await supabase.from("torneos").insert({
@@ -78,11 +95,14 @@ export async function crearTorneo(formData: FormData) {
     fecha_inicio: fecha.toISOString(),
     cupo_maximo: parsed.data.cupo_maximo,
     costo_entrada: parsed.data.costo_entrada,
-    publicado: true,
+    publicado: parsed.data.publicado ?? false,
+    latitud: parsed.data.latitud ?? null,
+    longitud: parsed.data.longitud ?? null,
+    imagen_url: parsed.data.imagen_url || null,
   });
 
   if (error) {
-    redirect("/tienda/nuevo-torneo?error=no-se-pudo-crear");
+    return { error: "No se pudo crear el torneo. Intenta nuevamente." };
   }
 
   revalidatePath("/");
