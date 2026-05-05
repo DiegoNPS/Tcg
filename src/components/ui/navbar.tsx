@@ -2,6 +2,7 @@ import { Home, PlusCircle, Store, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { signOut } from "@/actions/auth";
+import { LOGIN_PATH } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/server";
 
 export async function Navbar() {
@@ -68,7 +69,7 @@ export async function Navbar() {
 
           {!userEmail ? (
             <Link
-              href="/login"
+              href={LOGIN_PATH}
               className="rounded-lg bg-zinc-900 px-2 py-1.5 font-medium text-white transition hover:bg-zinc-700"
             >
               Iniciar sesion

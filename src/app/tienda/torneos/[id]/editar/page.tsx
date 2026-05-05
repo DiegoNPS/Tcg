@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { editarTorneo } from "@/actions/editarTorneo";
 import { TorneoForm } from "@/components/forms/torneo-form";
+import { LOGIN_PATH } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/server";
 
 type EditarTorneoPageProps = {
@@ -16,7 +17,7 @@ export default async function EditarTorneoPage({ params }: EditarTorneoPageProps
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect(LOGIN_PATH);
 
   const { data: torneo } = await supabase
     .from("torneos")

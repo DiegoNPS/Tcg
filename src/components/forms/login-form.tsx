@@ -3,6 +3,7 @@
 import { Mail, Send, ShieldCheck } from "lucide-react";
 import { useState, useTransition } from "react";
 
+import { AUTH_CALLBACK_PATH } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/client";
 
 type LoginFormProps = {
@@ -15,7 +16,8 @@ export function LoginForm({ nextPath }: LoginFormProps) {
   const [isPending, startTransition] = useTransition();
 
   const buildCallbackUrl = () => {
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const callbackUrl = new URL(AUTH_CALLBACK_PATH, base);
     callbackUrl.searchParams.set("next", nextPath);
     return callbackUrl.toString();
   };

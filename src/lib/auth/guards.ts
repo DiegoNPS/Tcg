@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
+import { LOGIN_PATH } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/server";
 
 function buildLoginPath(nextPath: string) {
-  return `/login?next=${encodeURIComponent(nextPath)}`;
+  return `${LOGIN_PATH}?next=${encodeURIComponent(nextPath)}`;
 }
 
 export async function requireAuthenticatedUser(nextPath: string) {
