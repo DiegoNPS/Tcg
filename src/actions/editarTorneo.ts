@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireAuthenticatedUser } from "@/lib/auth/guards";
 
 const TCG_VALUES = [
   "pokemon",
@@ -44,13 +44,9 @@ export async function editarTorneo(
   _prev: EditarTorneoState,
   formData: FormData,
 ): Promise<EditarTorneoState> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
+  const { supabase, user } = await requireAuthenticatedUser(
+    `/tienda/torneos/${torneoId}/editar`,
+  );
 
   // Verify ownership
   const { data: torneo } = await supabase

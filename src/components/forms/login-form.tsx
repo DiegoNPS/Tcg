@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Send } from "lucide-react";
+import { Mail, Send, ShieldCheck } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -14,6 +14,35 @@ export function LoginForm({ nextPath }: LoginFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const buildCallbackUrl = () => {
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    callbackUrl.searchParams.set("next", nextPath);
+    return callbackUrl.toString();
+  };
+
+  const handleGoogleLogin = () => {
+    setMessage(null);
+
+    startTransition(async () => {
+      try {
+        const supabase = createClient();
+
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: buildCallbackUrl(),
+          },
+        });
+
+        if (error) {
+          setMessage("No se pudo iniciar con Google. Intenta nuevamente.");
+        }
+      } catch {
+        setMessage("Faltan variables de entorno de Supabase. Configura .env.local y vuelve a intentar.");
+      }
+    });
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
@@ -21,13 +50,11 @@ export function LoginForm({ nextPath }: LoginFormProps) {
     startTransition(async () => {
       try {
         const supabase = createClient();
-        const callbackUrl = new URL("/auth/callback", window.location.origin);
-        callbackUrl.searchParams.set("next", nextPath);
 
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim(),
           options: {
-            emailRedirectTo: callbackUrl.toString(),
+            emailRedirectTo: buildCallbackUrl(),
           },
         });
 
@@ -45,6 +72,22 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        disabled={isPending}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        <ShieldCheck className="size-4" />
+        {isPending ? "Conectando..." : "Continuar con Google"}
+      </button>
+
+      <div className="flex items-center gap-3 text-xs text-zinc-500">
+        <span className="h-px flex-1 bg-zinc-200" />
+        <span>o con enlace magico</span>
+        <span className="h-px flex-1 bg-zinc-200" />
+      </div>
+
       <label className="block text-sm font-medium text-zinc-700" htmlFor="email">
         Correo
       </label>

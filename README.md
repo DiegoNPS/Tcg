@@ -21,6 +21,31 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
 
 En Vercel configura las mismas 2 variables para Preview y Production.
 
+## Login con Google (Supabase Auth)
+
+El proyecto ya incluye login por magic link y callback en `/auth/callback`. Para activar Google sin romper ese flujo:
+
+1. En Supabase ve a Authentication > Providers > Google y habilita el provider.
+2. Crea credenciales OAuth en Google Cloud (OAuth client ID tipo Web application).
+3. Agrega estos Authorized redirect URIs en Google Cloud:
+	- `https://<TU_PROJECT_REF>.supabase.co/auth/v1/callback`
+4. Copia Client ID y Client Secret en Supabase (provider Google).
+5. En Supabase > Authentication > URL Configuration define:
+	- Site URL: `http://localhost:3000` (local) y luego tu dominio de produccion.
+	- Additional Redirect URLs:
+	  - `http://localhost:3000/auth/callback`
+	  - `https://tu-dominio.com/auth/callback`
+6. Verifica que tu app tenga:
+	- `NEXT_PUBLIC_SUPABASE_URL`
+	- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+7. Reinicia `npm run dev` y prueba `/login` con el boton "Continuar con Google".
+
+Notas de compatibilidad:
+
+- El callback sigue centralizado en `/auth/callback` y reutiliza el intercambio de codigo por sesion de Supabase.
+- El flujo magic link se mantiene intacto como fallback.
+- El parametro `next` se sanea para evitar redirecciones inseguras.
+
 ## Base de datos
 
 Ejecuta en Supabase SQL Editor:

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireAuthenticatedUser } from "@/lib/auth/guards";
 
 const torneoIdSchema = z.string().uuid();
 
@@ -15,15 +15,9 @@ export async function inscribirJugador(torneoId: string) {
     redirect("/?inscripcion=torneo-invalido");
   }
 
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/?torneo=${torneoId}`)}`);
-  }
+  const { supabase, user } = await requireAuthenticatedUser(
+    `/?torneo=${parsedId.data}`,
+  );
 
   const nombreJugador =
     (typeof user.user_metadata?.full_name === "string" &&

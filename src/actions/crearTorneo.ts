@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireAuthenticatedUser } from "@/lib/auth/guards";
 
 const TCG_VALUES = [
   "pokemon",
@@ -43,15 +43,7 @@ export async function crearTorneo(
   _prev: CrearTorneoState,
   formData: FormData,
 ): Promise<CrearTorneoState> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/tienda/nuevo-torneo");
-  }
+  const { supabase, user } = await requireAuthenticatedUser("/tienda/nuevo-torneo");
 
   const { data: tienda, error: tiendaError } = await supabase
     .from("tiendas")

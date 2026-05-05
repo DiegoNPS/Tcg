@@ -9,7 +9,7 @@ type LoginPageProps = {
 function sanitizeNextPath(value: string | string[] | undefined) {
   const nextValue = Array.isArray(value) ? value[0] : value;
 
-  if (!nextValue || !nextValue.startsWith("/")) {
+  if (!nextValue || !nextValue.startsWith("/") || nextValue.startsWith("//")) {
     return "/tienda/dashboard";
   }
 
@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Accede a TCG Torneos</h1>
           <p className="text-sm text-zinc-600">
-            Inicia sesion con enlace magico. No necesitas contrasena.
+            Inicia sesion con Google o con enlace magico. No necesitas contrasena.
           </p>
         </div>
 
