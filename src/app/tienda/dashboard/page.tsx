@@ -54,9 +54,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10">
         <h1 className="text-2xl font-bold text-zinc-900">Dashboard de tienda</h1>
         <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Tu usuario aun no esta vinculado a una tienda. Inserta un registro en la tabla tiendas con owner_id =
-          {` ${user.id}`}.
+          Tu usuario aun no esta vinculado a una tienda. Crea una ahora para desbloquear el panel.
         </p>
+        <div className="mt-4">
+          <a
+            href="/tienda/crear"
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+          >
+            Crear tienda
+          </a>
+        </div>
       </main>
     );
   }

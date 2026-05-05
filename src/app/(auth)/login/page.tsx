@@ -51,6 +51,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ) : null}
 
         <p className="text-sm text-zinc-600">
+          No tienes cuenta?{" "}
+          <Link href="/signup" className="font-medium text-zinc-900 underline underline-offset-4">
+            Registrate
+          </Link>
+          .
+        </p>
+
+        <p className="text-sm text-zinc-600">
           Volver a{" "}
           <Link href="/" className="font-medium text-zinc-900 underline underline-offset-4">
             torneos publicos
