@@ -12,11 +12,11 @@ export async function inscribirJugador(torneoId: string) {
   const parsedId = torneoIdSchema.safeParse(torneoId);
 
   if (!parsedId.success) {
-    redirect("/?inscripcion=torneo-invalido");
+    redirect("/torneos?inscripcion=torneo-invalido");
   }
 
   const { supabase, user } = await requireAuthenticatedUser(
-    `/?torneo=${parsedId.data}`,
+    `/torneos?torneo=${parsedId.data}`,
   );
 
   const nombreJugador =
@@ -34,12 +34,12 @@ export async function inscribirJugador(torneoId: string) {
 
   if (error) {
     if (error.code === "23505") {
-      redirect("/?inscripcion=existente");
+      redirect("/torneos?inscripcion=existente");
     }
 
-    redirect("/?inscripcion=error");
+    redirect("/torneos?inscripcion=error");
   }
 
-  revalidatePath("/");
-  redirect("/?inscripcion=ok");
+  revalidatePath("/torneos");
+  redirect("/torneos?inscripcion=ok");
 }

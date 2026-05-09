@@ -1,4 +1,4 @@
-import { Home, PlusCircle, Store, Trophy } from "lucide-react";
+import { Home, PlusCircle, Store, Ticket, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { signOut } from "@/actions/auth";
@@ -46,6 +46,14 @@ export async function Navbar() {
           >
             <Home className="size-4" />
             Home
+          </Link>
+
+          <Link
+            href="/torneos"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-zinc-700 transition hover:bg-zinc-100"
+          >
+            <Ticket className="size-4" />
+            Torneos
           </Link>
 
           {isTienda ? (

@@ -1,7 +1,15 @@
+/// <reference types="google.maps" />
+
 "use client";
 
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
+
+declare global {
+  interface Window {
+    google?: typeof google;
+  }
+}
 
 type DireccionAutocompleteProps = {
   error?: string;
@@ -18,8 +26,10 @@ export function DireccionAutocomplete({
 }: DireccionAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [value, setValue] = useState(defaultValue);
   const [comuna, setComuna] = useState("");
+  const [scriptReady, setScriptReady] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     defaultLat != null && defaultLng != null ? { lat: defaultLat, lng: defaultLng } : null,
   );
@@ -27,7 +37,14 @@ export function DireccionAutocomplete({
 
   // Show map for pre-existing coords (edit mode)
   useEffect(() => {
-    if (!coords || !mapRef.current || typeof google === "undefined") return;
+    if (typeof window === "undefined") return;
+    if (window.google?.maps?.places && !scriptReady) {
+      setScriptReady(true);
+    }
+  }, [scriptReady]);
+
+  useEffect(() => {
+    if (!coords || !mapRef.current || !scriptReady || typeof google === "undefined") return;
     const map = new google.maps.Map(mapRef.current, {
       center: coords,
       zoom: 16,
@@ -35,21 +52,15 @@ export function DireccionAutocomplete({
       zoomControl: true,
     });
     new google.maps.Marker({ position: coords, map });
-  }, [coords]);
+  }, [coords, scriptReady]);
 
-  function initAutocomplete() {
-    if (!inputRef.current || typeof google === "undefined") return;
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
 
-    // If we already have coords from edit mode, render the map now
-    if (coords && mapRef.current) {
-      const map = new google.maps.Map(mapRef.current, {
-        center: coords,
-        zoom: 16,
-        disableDefaultUI: true,
-        zoomControl: true,
-      });
-      new google.maps.Marker({ position: coords, map });
-    }
+  useEffect(() => {
+    if (!scriptReady || !inputRef.current || typeof google === "undefined") return;
+    if (autocompleteRef.current) return;
 
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "cl" },
@@ -64,7 +75,8 @@ export function DireccionAutocomplete({
       setValue(address);
       if (inputRef.current) inputRef.current.value = address;
 
-      const components = place.address_components ?? [];
+      const components: google.maps.GeocoderAddressComponent[] =
+        place.address_components ?? [];
       const localidad =
         components.find((c) => c.types.includes("locality"))?.long_name ??
         components.find((c) => c.types.includes("sublocality"))?.long_name ??
@@ -77,24 +89,19 @@ export function DireccionAutocomplete({
       const lat = location.lat();
       const lng = location.lng();
       setCoords({ lat, lng });
-
-      if (!mapRef.current) return;
-      const map = new google.maps.Map(mapRef.current, {
-        center: { lat, lng },
-        zoom: 16,
-        disableDefaultUI: true,
-        zoomControl: true,
-      });
-      new google.maps.Marker({ position: { lat, lng }, map });
     });
-  }
+
+    autocompleteRef.current = autocomplete;
+  }, [scriptReady]);
 
   return (
     <>
       {apiKey ? (
         <Script
           src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`}
-          onLoad={initAutocomplete}
+          onReady={() => {
+            setScriptReady(true);
+          }}
         />
       ) : null}
 
@@ -106,8 +113,13 @@ export function DireccionAutocomplete({
             required
             name="direccion"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => {
+              setValue(e.target.value);
+              setCoords(null);
+              setComuna("");
+            }}
             placeholder="Ingresa la dirección del evento"
+            autoComplete="off"
             className="rounded-xl border border-zinc-300 px-3 py-2.5 outline-none transition focus:border-zinc-900 aria-[invalid]:border-rose-400"
             aria-invalid={!!error || undefined}
           />
