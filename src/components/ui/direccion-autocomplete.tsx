@@ -16,6 +16,7 @@ type DireccionAutocompleteProps = {
   defaultValue?: string;
   defaultLat?: number;
   defaultLng?: number;
+  onAddressChange?: (address: string, lat: number | null, lng: number | null, ciudad?: string) => void;
 };
 
 export function DireccionAutocomplete({
@@ -23,6 +24,7 @@ export function DireccionAutocomplete({
   defaultValue = "",
   defaultLat,
   defaultLng,
+  onAddressChange,
 }: DireccionAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -89,6 +91,11 @@ export function DireccionAutocomplete({
       const lat = location.lat();
       const lng = location.lng();
       setCoords({ lat, lng });
+
+      // Call callback if provided
+      if (onAddressChange) {
+        onAddressChange(address, lat, lng, localidad);
+      }
     });
 
     autocompleteRef.current = autocomplete;

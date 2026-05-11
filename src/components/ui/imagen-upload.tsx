@@ -7,9 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 
 type ImagenUploadProps = {
   defaultValue?: string | null;
+  onUpload?: (url: string) => void;
 };
 
-export function ImagenUpload({ defaultValue }: ImagenUploadProps) {
+export function ImagenUpload({ defaultValue, onUpload }: ImagenUploadProps) {
   const [preview, setPreview] = useState<string | null>(defaultValue ?? null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +62,9 @@ export function ImagenUpload({ defaultValue }: ImagenUploadProps) {
 
     const { data } = supabase.storage.from("torneos").getPublicUrl(path);
     setUrl(data.publicUrl);
+    if (onUpload) {
+      onUpload(data.publicUrl);
+    }
     setUploading(false);
   }
 

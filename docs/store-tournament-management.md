@@ -13,16 +13,17 @@ Frontend implementation for store-side tournament creation and editing.
 ## New Components
 
 ### `TorneoForm` (`src/components/forms/torneo-form.tsx`)
-Shared form for create and edit modes. Uses `useActionState` for inline validation errors without losing form data on failure.
+Shared form for create and edit modes. Uses React hooks and fetch-based API consumption for modern client-side form handling.
 
-- `mode="create"` (default) — calls `crearTorneo` action
-- `mode="edit"` — requires `action` (bound `editarTorneo`) and `defaults` (existing tournament data)
+- `mode="create"` (default) — POST to `/api/torneos/crear`
+- `mode="edit"` — PUT to `/api/torneos/[id]/editar` with tournament ID from defaults
+- Supports publishing (publicado=true) or saving as draft (publicado=false)
 
 ### `DireccionAutocomplete` (`src/components/ui/direccion-autocomplete.tsx`)
 Google Maps Places Autocomplete input for the address field.
 - Restricted to Chile (`cl`)
-- Auto-extracts commune from address components → stored in hidden `ciudad` field
-- Captures `lat/lng` → stored in hidden `latitud`/`longitud` fields
+- Auto-extracts commune from address components → passed via `onAddressChange` callback
+- Captures `lat/lng` → passed via `onAddressChange` callback
 - Renders a map preview with a pin after address selection
 - Falls back to plain text input if `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is not set
 
@@ -31,19 +32,32 @@ Image upload with preview backed by Supabase Storage.
 - Uploads to `torneos/{user_id}/{uuid}.ext`
 - Max 5MB, images only
 - Shows upload progress overlay
-- Stores public URL in hidden `imagen_url` field
+- Calls `onUpload` callback with public URL after successful upload
 
-## Server Actions
+## REST API Endpoints
 
-### `crearTorneo` (`src/actions/crearTorneo.ts`)
-- Validates session and store ownership
-- Returns `CrearTorneoState` with `fieldErrors` on validation failure (no redirect)
-- Redirects to `/tienda/dashboard?created=1` on success
+### `POST /api/torneos/crear`
+Create a new tournament for authenticated user's store.
+- Requires authenticated session
+- Validates user owns a tienda
+- Request body: `{ titulo, descripcion, tcg_juego, categoria, ciudad, direccion, fecha_inicio, cupo_maximo, costo_entrada, publicado, latitud, longitud, imagen_url }`
+- Returns: 201 with tournament data, 401 if not authenticated, 403 if user has no tienda, 400 on validation error
 
-### `editarTorneo` (`src/actions/editarTorneo.ts`)
-- Validates session and verifies the authenticated user owns the tournament's tienda
-- Returns `EditarTorneoState` with `fieldErrors` on validation failure
-- Redirects to `/tienda/dashboard?updated=1` on success
+### `PUT /api/torneos/[id]/editar`
+Update existing tournament.
+- Requires authenticated session and ownership verification
+- Request body: Same as POST /api/torneos/crear
+- Returns: 200 on success, 401 if not authenticated, 403 if not owner, 404 if tournament not found, 400 on validation error
+
+## Server Actions (Deprecated)
+
+> Note: The following Server Actions are no longer in use and kept for reference only. All operations now use REST API endpoints with fetch-based consumption.
+
+### `crearTorneo` (`src/actions/crearTorneo.ts`) — DEPRECATED
+Replaced by `POST /api/torneos/crear`
+
+### `editarTorneo` (`src/actions/editarTorneo.ts`) — DEPRECATED
+Replaced by `PUT /api/torneos/[id]/editar`
 
 ## Database Migrations
 

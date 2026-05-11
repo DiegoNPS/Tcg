@@ -1,7 +1,8 @@
 "use client";
 
 import { Mail, Send, ShieldCheck, KeyRound } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { AUTH_CALLBACK_PATH } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/client";
@@ -14,7 +15,8 @@ export function SignupForm({ nextPath }: SignupFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
 
   const buildCallbackUrl = () => {
     const base = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
@@ -26,79 +28,60 @@ export function SignupForm({ nextPath }: SignupFormProps) {
   const handleGoogleSignup = () => {
     setMessage(null);
 
-    startTransition(async () => {
-      try {
-        const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: buildCallbackUrl(),
-          },
-        });
-
+      supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: buildCallbackUrl(),
+        },
+      }).then(({ error }) => {
         if (error) {
           setMessage("No se pudo continuar con Google. Intenta nuevamente.");
         }
-      } catch {
+      }).catch(() => {
         setMessage("Faltan variables de entorno de Supabase. Configura .env.local y vuelve a intentar.");
-      }
-    });
+      });
+    } catch {
+      setMessage("Faltan variables de entorno de Supabase. Configura .env.local y vuelve a intentar.");
+    }
   };
 
-  const handlePasswordSignup = (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
+    setIsPending(true);
 
-    startTransition(async () => {
-      try {
-        const supabase = createClient();
-
-        const { error } = await supabase.auth.signUp({
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           email: email.trim(),
           password: password.trim(),
-          options: {
-            emailRedirectTo: buildCallbackUrl(),
-          },
-        });
+          nextPath,
+        }),
+      });
 
-        if (error) {
-          setMessage("No se pudo crear la cuenta. Verifica tus datos.");
-          return;
-        }
-
-        setMessage("Cuenta creada. Revisa tu correo para verificar y continuar.");
-      } catch {
-        setMessage("Faltan variables de entorno de Supabase. Configura .env.local y vuelve a intentar.");
+      if (!response.ok) {
+        const error = await response.json();
+        setMessage(error.error || "No se pudo crear la cuenta. Intenta nuevamente.");
+        setIsPending(false);
+        return;
       }
-    });
+
+      setMessage("Cuenta creada. Revisa tu correo para verificar y continuar.");
+      setEmail("");
+      setPassword("");
+    } catch {
+      setMessage("Error de conexión. Intenta nuevamente.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
-  const handleMagicLink = () => {
-    setMessage(null);
 
-    startTransition(async () => {
-      try {
-        const supabase = createClient();
-
-        const { error } = await supabase.auth.signInWithOtp({
-          email: email.trim(),
-          options: {
-            emailRedirectTo: buildCallbackUrl(),
-          },
-        });
-
-        if (error) {
-          setMessage("No se pudo enviar el enlace. Revisa el correo e intenta nuevamente.");
-          return;
-        }
-
-        setMessage("Te enviamos un enlace magico. Abre tu correo para continuar.");
-      } catch {
-        setMessage("Faltan variables de entorno de Supabase. Configura .env.local y vuelve a intentar.");
-      }
-    });
-  };
 
   return (
     <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -166,15 +149,7 @@ export function SignupForm({ nextPath }: SignupFormProps) {
         </button>
       </form>
 
-      <button
-        type="button"
-        onClick={handleMagicLink}
-        disabled={isPending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
-      >
-        <Send className="size-4" />
-        {isPending ? "Enviando enlace..." : "Enviar enlace magico"}
-      </button>
+
 
       {message ? <p className="text-sm text-zinc-600">{message}</p> : null}
     </div>

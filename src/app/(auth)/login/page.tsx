@@ -21,7 +21,7 @@ function getErrorMessage(value: string | string[] | undefined) {
   const errorValue = Array.isArray(value) ? value[0] : value;
 
   if (errorValue === "callback") {
-    return "No pudimos completar el inicio de sesión. Solicita un nuevo enlace o vuelve a intentar con Google.";
+    return "No pudimos completar el inicio de sesión. Verifica tus credenciales o intenta con Google.";
   }
 
   return null;
@@ -38,7 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Accede a TCG Torneos</h1>
           <p className="text-sm text-zinc-600">
-            Inicia sesion con Google o con enlace magico. No necesitas contrasena.
+            Inicia sesión con tu cuenta (email/contraseña) o con Google.
           </p>
         </div>
 

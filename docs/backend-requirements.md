@@ -24,9 +24,9 @@ INSERT INTO public.tiendas (owner_id, nombre, ciudad)
 VALUES ('USER_UUID', 'Nombre Tienda', 'Santiago');
 ```
 
-**Question for backend team:** Is this the agreed approach long-term, or do we need a self-registration flow for stores? If registration is needed, we need:
-- A `POST /api/tiendas` endpoint or server action
-- An onboarding page for new store owners
+**Question for backend team:** Is this the agreed approach long-term, or do we need a self-registration flow for stores? If registration is needed, we already have:
+- A `POST /api/tiendas` endpoint (frontend implementation complete)
+- An onboarding page for new store owners at `/tienda/crear`
 
 ---
 
