@@ -4,7 +4,7 @@ import createAdminClient from "@/lib/supabase/admin";
 
 const schema = z.object({
   user_id: z.string().uuid(),
-  role: z.enum(["jugador", "tienda"]),
+  role: z.enum(["jugador", "tienda", "admin"]),
 });
 
 export async function POST(request: Request) {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     return Response.json({ data }, { status: 200 });
-  } catch (err) {
+  } catch {
     return Response.json({ error: "Error interno" }, { status: 500 });
   }
 }

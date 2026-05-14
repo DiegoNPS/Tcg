@@ -1,4 +1,4 @@
-import { Home, PlusCircle, Store, Ticket, Trophy } from "lucide-react";
+import { Home, LayoutDashboard, PlusCircle, Shield, Store, Ticket, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { signOut } from "@/actions/auth";
@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function Navbar() {
   let userEmail: string | null = null;
   let isTienda = false;
+  let isAdmin = false;
 
   try {
     const supabase = await createClient();
@@ -18,17 +19,18 @@ export async function Navbar() {
     userEmail = user?.email ?? null;
 
     if (user) {
-      const { data: tienda } = await supabase
-        .from("tiendas")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
+      const [{ data: tienda }, { data: profile }] = await Promise.all([
+        supabase.from("tiendas").select("id").eq("owner_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("user_role").eq("user_id", user.id).maybeSingle(),
+      ]);
 
       isTienda = Boolean(tienda);
+      isAdmin = profile?.user_role === "admin";
     }
   } catch {
     userEmail = null;
     isTienda = false;
+    isAdmin = false;
   }
 
   return (
@@ -75,11 +77,22 @@ export async function Navbar() {
             </>
           ) : null}
 
+          {isAdmin ? (
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-zinc-700 transition hover:bg-zinc-100"
+            >
+              <LayoutDashboard className="size-4" />
+              Admin
+            </Link>
+          ) : null}
+
           {!userEmail ? (
             <Link
               href={LOGIN_PATH}
-              className="rounded-lg bg-zinc-900 px-2 py-1.5 font-medium text-white transition hover:bg-zinc-700"
+              className="inline-flex items-center gap-1 rounded-lg bg-zinc-900 px-2 py-1.5 font-medium text-white transition hover:bg-zinc-700"
             >
+              <Shield className="size-4" />
               Iniciar sesion
             </Link>
           ) : (

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 const updateProfileSchema = z.object({
   display_name: z.string().trim().optional(),
   // user_role is accepted by the client but changing roles is restricted.
-  user_role: z.enum(["jugador", "tienda"]).optional(),
+  user_role: z.enum(["jugador", "tienda", "admin"]).optional(),
 });
 
 export async function PUT(request: Request) {
@@ -59,7 +59,7 @@ export async function PUT(request: Request) {
   } as {
     user_id: string;
     display_name?: string | null;
-    user_role?: "jugador" | "tienda" | undefined;
+    user_role?: "jugador" | "tienda" | "admin" | undefined;
   };
 
   const { data, error } = await supabase

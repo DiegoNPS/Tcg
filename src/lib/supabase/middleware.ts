@@ -6,7 +6,7 @@ import type { Database } from "@/types/database.types";
 import { DEFAULT_POST_LOGIN_PATH, LOGIN_PATH, SIGNUP_PATH } from "@/lib/auth/routes";
 import { getSupabaseEnv } from "./config";
 
-const PRIVATE_PREFIXES = ["/tienda"];
+const PRIVATE_PREFIXES = ["/tienda", "/admin"];
 
 function isPrivateRoute(pathname: string) {
   return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));

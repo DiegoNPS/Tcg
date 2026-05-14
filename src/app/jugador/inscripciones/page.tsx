@@ -1,6 +1,18 @@
 import { requirePlayer } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 
+type EntryRow = {
+  id: string;
+  torneo_id: string;
+  status: string;
+};
+
+type TorneoResumen = {
+  id: string;
+  titulo: string;
+  fecha_inicio: string;
+};
+
 export default async function InscripcionesPage() {
   // Protege ruta: solo jugadores
   await requirePlayer();
@@ -25,7 +37,8 @@ export default async function InscripcionesPage() {
     throw new Error(entriesError.message);
   }
 
-  const torneoIds = Array.from(new Set((entries ?? []).map((e: any) => e.torneo_id)));
+  const typedEntries = (entries ?? []) as EntryRow[];
+  const torneoIds = Array.from(new Set(typedEntries.map((entry) => entry.torneo_id)));
   const torneosMap = new Map<string, { titulo: string; fecha_inicio: string }>();
 
   if (torneoIds.length > 0) {
@@ -34,8 +47,9 @@ export default async function InscripcionesPage() {
       .select("id, titulo, fecha_inicio")
       .in("id", torneoIds as string[]);
 
-    torneos?.forEach((t: any) => {
-      torneosMap.set(t.id, { titulo: t.titulo, fecha_inicio: t.fecha_inicio });
+    (torneos ?? []).forEach((torneo) => {
+      const resumen = torneo as TorneoResumen;
+      torneosMap.set(resumen.id, { titulo: resumen.titulo, fecha_inicio: resumen.fecha_inicio });
     });
   }
 
@@ -50,7 +64,7 @@ export default async function InscripcionesPage() {
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         {entries && entries.length > 0 ? (
           <ul className="space-y-3">
-            {entries.map((entry: any) => {
+            {typedEntries.map((entry) => {
               const torneo = torneosMap.get(entry.torneo_id);
               return (
                 <li key={entry.id} className="flex items-center justify-between">

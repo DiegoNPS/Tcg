@@ -12,21 +12,21 @@ export type Database = {
       profiles: {
         Row: {
           user_id: string
-          user_role: "jugador" | "tienda"
+          user_role: "jugador" | "tienda" | "admin"
           display_name: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           user_id: string
-          user_role?: "jugador" | "tienda"
+          user_role?: "jugador" | "tienda" | "admin"
           display_name?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           user_id?: string
-          user_role?: "jugador" | "tienda"
+          user_role?: "jugador" | "tienda" | "admin"
           display_name?: string | null
           created_at?: string
           updated_at?: string
@@ -244,7 +244,7 @@ export type Database = {
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: {
-      user_role: "jugador" | "tienda"
+      user_role: "jugador" | "tienda" | "admin"
       tcg_juego: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
       categoria_torneo: "local" | "regional" | "premier" | "casual"
       estado_inscripcion: "confirmada" | "cancelada"

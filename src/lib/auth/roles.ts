@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type UserRole = "jugador" | "tienda";
+export type UserRole = "jugador" | "tienda" | "admin";
 
 /**
  * Obtener el perfil del usuario autenticado
@@ -41,6 +41,14 @@ export async function isStore() {
 export async function isPlayer() {
   const profile = await getUserProfile();
   return profile?.user_role === "jugador";
+}
+
+/**
+ * Verificar si el usuario es 'admin'
+ */
+export async function isAdmin() {
+  const profile = await getUserProfile();
+  return profile?.user_role === "admin";
 }
 
 /**

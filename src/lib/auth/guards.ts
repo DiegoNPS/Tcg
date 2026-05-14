@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { LOGIN_PATH } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/server";
-import { isStore, isPlayer } from "./roles";
+import { isStore, isPlayer, isAdmin } from "./roles";
 
 function buildLoginPath(nextPath: string) {
   return `${LOGIN_PATH}?next=${encodeURIComponent(nextPath)}`;
@@ -42,6 +42,18 @@ export async function requirePlayer() {
   const playerCheck = await isPlayer();
 
   if (!playerCheck) {
+    redirect("/");
+  }
+}
+
+/**
+ * Guard: Solo admins pueden acceder
+ */
+export async function requireAdmin() {
+  await requireAuthenticatedUser("/admin");
+  const adminCheck = await isAdmin();
+
+  if (!adminCheck) {
     redirect("/");
   }
 }

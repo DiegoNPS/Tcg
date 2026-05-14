@@ -254,10 +254,16 @@ s:
 
 ## Roles y seguridad (nota importante)
 
-- El proyecto distingue dos roles de usuario en `profiles.user_role`: `jugador` y `tienda`.
+- El proyecto distingue tres roles de usuario en `profiles.user_role`: `jugador`, `tienda` y `admin`.
+- El panel de administración vive en `/admin` y usa el client de servicio del servidor para revisar usuarios, tiendas, torneos e inscripciones.
 - Para evitar elevaciones de privilegio, los cambios de rol desde el propio usuario están restringidos. El endpoint `PUT /api/auth/me` ya no permite que un usuario cambie su `user_role` arbitrariamente; los cambios deben gestionarse por un administrador o mediante procesos de servicio que usen `SUPABASE_SERVICE_ROLE`.
 - `SUPABASE_SERVICE_ROLE` es una credencial sensible que **NUNCA** debe exponerse en clientes. Configúrala solo en variables de entorno de servidor/CI.
 - Si necesitas que un usuario pase de `jugador` a `tienda` en tu flujo, implementa un proceso de aprobación (admin) que use el endpoint admin con service role para actualizar `profiles.user_role`.
+
+Roles disponibles en la app:
+- `jugador`: se inscribe y consulta sus torneos.
+- `tienda`: crea tiendas y publica torneos.
+- `admin`: gestiona usuarios, tiendas, torneos e inscripciones desde `/admin`.
 
 Si querés, puedo añadir un endpoint admin para asignar roles y una guía paso a paso para el proceso de aprobación.
 
