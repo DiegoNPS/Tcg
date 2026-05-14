@@ -32,7 +32,6 @@ export async function PUT(request: Request) {
   try {
     // Update password for currently authenticated user
     // supabase.auth.updateUser is supported in the server client
-    // @ts-expect-error typings may vary
     const { error } = await supabase.auth.updateUser({ password: parsed.data.new_password });
 
     if (error) {
