@@ -126,10 +126,6 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
     }
   };
 
-  const defaultFecha = defaults?.fecha_inicio
-    ? new Date(defaults.fecha_inicio).toISOString().slice(0, 16)
-    : undefined;
-
   return (
     <form className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
       {error ? (

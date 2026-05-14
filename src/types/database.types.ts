@@ -241,8 +241,8 @@ export type Database = {
         ]
       }
     }
-    Views: {}
-    Functions: {}
+    Views: Record<string, never>
+    Functions: Record<string, never>
     Enums: {
       user_role: "jugador" | "tienda"
       tcg_juego: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
@@ -257,7 +257,7 @@ export type Database = {
         | "dropped"
         | "eliminated"
     }
-    CompositeTypes: {}
+    CompositeTypes: Record<string, never>
   }
 }
 

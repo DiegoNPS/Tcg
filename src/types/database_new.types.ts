@@ -184,15 +184,15 @@ export type Database = {
         ]
       }
     }
-    Views: {}
-    Functions: {}
+    Views: Record<string, never>
+    Functions: Record<string, never>
     Enums: {
       user_role: "jugador" | "tienda"
       tcg_juego: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
       categoria_torneo: "local" | "regional" | "premier" | "casual"
       estado_inscripcion: "confirmada" | "cancelada"
     }
-    CompositeTypes: {}
+    CompositeTypes: Record<string, never>
   }
 }
 

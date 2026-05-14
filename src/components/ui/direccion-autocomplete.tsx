@@ -29,21 +29,14 @@ export function DireccionAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [value, setValue] = useState(defaultValue);
   const [comuna, setComuna] = useState("");
-  const [scriptReady, setScriptReady] = useState(false);
+  const [scriptReady, setScriptReady] = useState(() =>
+    typeof window !== "undefined" && !!window.google?.maps?.places,
+  );
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     defaultLat != null && defaultLng != null ? { lat: defaultLat, lng: defaultLng } : null,
   );
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-  // Show map for pre-existing coords (edit mode)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.google?.maps?.places && !scriptReady) {
-      setScriptReady(true);
-    }
-  }, [scriptReady]);
 
   useEffect(() => {
     if (!coords || !mapRef.current || !scriptReady || typeof google === "undefined") return;
@@ -55,10 +48,6 @@ export function DireccionAutocomplete({
     });
     new google.maps.Marker({ position: coords, map });
   }, [coords, scriptReady]);
-
-  useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
 
   useEffect(() => {
     if (!scriptReady || !inputRef.current || typeof google === "undefined") return;
@@ -74,7 +63,6 @@ export function DireccionAutocomplete({
       const place = autocomplete.getPlace();
 
       const address = place.formatted_address ?? "";
-      setValue(address);
       if (inputRef.current) inputRef.current.value = address;
 
       const components: google.maps.GeocoderAddressComponent[] =
@@ -93,13 +81,11 @@ export function DireccionAutocomplete({
       setCoords({ lat, lng });
 
       // Call callback if provided
-      if (onAddressChange) {
-        onAddressChange(address, lat, lng, localidad);
-      }
+      onAddressChange?.(address, lat, lng, localidad);
     });
 
     autocompleteRef.current = autocomplete;
-  }, [scriptReady]);
+  }, [scriptReady, onAddressChange]);
 
   return (
     <>
@@ -119,9 +105,8 @@ export function DireccionAutocomplete({
             ref={inputRef}
             required
             name="direccion"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
+            defaultValue={defaultValue}
+            onChange={() => {
               setCoords(null);
               setComuna("");
             }}

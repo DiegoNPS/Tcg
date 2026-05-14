@@ -51,10 +51,29 @@ export function TorneoCard({ torneo, canInscribirse, yaInscripto }: TorneoCardPr
 
       if (response.ok) {
         router.push("/torneos?inscripcion=ok");
-      } else if (response.status === 409) {
-        router.push("/torneos?inscripcion=existente");
       } else {
-        router.push("/torneos?inscripcion=error");
+        let code: string | undefined;
+
+        try {
+          const data = await response.json();
+          if (data && typeof data.code === "string") {
+            code = data.code;
+          }
+        } catch {
+          code = undefined;
+        }
+
+        if (response.status === 401) {
+          router.push(loginHref);
+        } else if (code) {
+          router.push(`/torneos?inscripcion=${code}`);
+        } else if (response.status === 409) {
+          router.push("/torneos?inscripcion=existente");
+        } else if (response.status === 403) {
+          router.push("/torneos?inscripcion=no-jugador");
+        } else {
+          router.push("/torneos?inscripcion=error");
+        }
       }
     } catch {
       router.push("/torneos?inscripcion=error");

@@ -28,32 +28,55 @@ export async function POST(request: Request) {
   const parsed = inscripcionSchema.safeParse(body);
 
   if (!parsed.success) {
-    return Response.json({ error: "Datos de inscripción inválidos" }, { status: 400 });
+    return Response.json(
+      { error: "Datos de inscripción inválidos", code: "torneo-invalido" },
+      { status: 400 },
+    );
   }
 
-  const nombreJugador =
-    (typeof user.user_metadata?.full_name === "string" &&
-      user.user_metadata.full_name.trim()) ||
-    user.email ||
-    "Jugador";
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("user_role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (profileError || profile?.user_role !== "jugador") {
+    return Response.json(
+      { error: "Solo jugadores pueden inscribirse", code: "no-jugador" },
+      { status: 403 },
+    );
+  }
 
   const { data, error } = await supabase
-    .from("inscripciones")
+    .from("tournament_entries")
     .insert({
       torneo_id: parsed.data.torneo_id,
-      jugador_id: user.id,
-      nombre_jugador: nombreJugador,
-      estado: "confirmada",
+      entry_type: "solo",
+      user_id: user.id,
+      status: "registered",
     })
-    .select("id, torneo_id, jugador_id, nombre_jugador, estado, created_at")
+    .select("id, torneo_id, user_id, status, created_at")
     .single();
 
   if (error) {
     if (error.code === "23505") {
-      return Response.json({ error: "Ya estabas inscrito en este torneo" }, { status: 409 });
+      return Response.json(
+        { error: "Ya estabas inscrito en este torneo", code: "existente" },
+        { status: 409 },
+      );
     }
 
-    return Response.json({ error: error.message }, { status: 400 });
+    if (error.code === "42501") {
+      return Response.json(
+        { error: "Solo jugadores pueden inscribirse", code: "no-jugador" },
+        { status: 403 },
+      );
+    }
+
+    return Response.json(
+      { error: "No se pudo completar la inscripción", code: "error" },
+      { status: 400 },
+    );
   }
 
   return Response.json({ data }, { status: 201 });

@@ -1,7 +1,6 @@
 "use client";
 
 import { Mail, Send, ShieldCheck, KeyRound } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AUTH_CALLBACK_PATH } from "@/lib/auth/routes";
@@ -16,7 +15,6 @@ export function SignupForm({ nextPath }: SignupFormProps) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
 
   const buildCallbackUrl = () => {
     const base = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
