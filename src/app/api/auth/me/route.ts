@@ -31,13 +31,19 @@ export async function PUT(request: Request) {
     return Response.json({ error: "Datos inválidos" }, { status: 400 });
   }
 
-  const toUpsert: Record<string, unknown> = { user_id: user.id };
-  if (parsed.data.display_name !== undefined) toUpsert.display_name = parsed.data.display_name;
-  if (parsed.data.user_role !== undefined) toUpsert.user_role = parsed.data.user_role;
+  const toUpsert = {
+    user_id: user.id,
+    display_name: parsed.data.display_name ?? null,
+    user_role: parsed.data.user_role ?? undefined,
+  } as {
+    user_id: string;
+    display_name?: string | null;
+    user_role?: "jugador" | "tienda" | undefined;
+  };
 
   const { data, error } = await supabase
     .from("profiles")
-    .upsert(toUpsert, { onConflict: ["user_id"] })
+    .upsert(toUpsert, { onConflict: "user_id" })
     .select()
     .single();
 

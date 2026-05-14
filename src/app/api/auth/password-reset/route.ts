@@ -26,7 +26,6 @@ export async function POST(request: Request) {
   try {
     // send reset email
     // supabase-js exposes resetPasswordForEmail
-    // @ts-ignore
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
       redirectTo: callbackUrl.toString(),
     });
@@ -36,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     return Response.json({ message: "Email de recuperación enviado" }, { status: 200 });
-  } catch (err) {
+  } catch {
     return Response.json({ error: "No se pudo iniciar recuperación" }, { status: 500 });
   }
 }

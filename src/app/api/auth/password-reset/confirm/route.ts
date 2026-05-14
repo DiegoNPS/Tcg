@@ -2,10 +2,9 @@ import { z } from "zod";
 
 import createAdminClient from "@/lib/supabase/admin";
 
-const createUserSchema = z.object({
-  email: z.string().trim().email(),
-  password: z.string().min(6).optional(),
-  user_metadata: z.record(z.string(), z.any()).optional(),
+const confirmSchema = z.object({
+  user_id: z.string().uuid(),
+  new_password: z.string().min(6).max(128),
 });
 
 export async function POST(request: Request) {
@@ -22,25 +21,24 @@ export async function POST(request: Request) {
     return Response.json({ error: "Body JSON inválido" }, { status: 400 });
   }
 
-  const parsed = createUserSchema.safeParse(body);
+  const parsed = confirmSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json({ error: "Datos inválidos" }, { status: 400 });
   }
 
   try {
-    // use admin auth API to create user
-    const { data, error } = await admin.auth.admin.createUser({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      user_metadata: parsed.data.user_metadata,
+    // Use admin API to update user's password. Supabase admin typings vary by version.
+    // @ts-expect-error admin typings may differ
+    const { data, error } = await admin.auth.admin.updateUser(parsed.data.user_id, {
+      password: parsed.data.new_password,
     });
 
     if (error) {
       return Response.json({ error: error.message }, { status: 400 });
     }
 
-    return Response.json({ data }, { status: 201 });
+    return Response.json({ data }, { status: 200 });
   } catch {
-    return Response.json({ error: "No se pudo crear usuario" }, { status: 500 });
+    return Response.json({ error: "No se pudo actualizar la contraseña" }, { status: 500 });
   }
 }
