@@ -260,3 +260,20 @@ s:
 - Si necesitas que un usuario pase de `jugador` a `tienda` en tu flujo, implementa un proceso de aprobación (admin) que use el endpoint admin con service role para actualizar `profiles.user_role`.
 
 Si querés, puedo añadir un endpoint admin para asignar roles y una guía paso a paso para el proceso de aprobación.
+
+### Endpoint admin para asignar roles
+
+Hay un endpoint admin para asignar `user_role` desde server usando la `SUPABASE_SERVICE_ROLE`:
+
+- `POST /api/admin/roles` — body: `{ "user_id": "<uuid>", "role": "jugador" | "tienda" }`
+
+Ejemplo `curl` usando la `SERVICE_ROLE` en el servidor:
+
+```bash
+curl -X POST https://tu-app.com/api/admin/roles \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer $SUPABASE_SERVICE_ROLE" \
+	-d '{"user_id":"00000000-0000-0000-0000-000000000000","role":"tienda"}'
+```
+
+Nota: llama este endpoint solo desde entornos de servidor; protege su acceso con controles adicionales si fuera necesario (IP allowlist, admin auth, etc.).
