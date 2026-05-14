@@ -23,13 +23,14 @@ export async function requireAuthenticatedUser(nextPath: string) {
 }
 
 /**
- * Guard: Solo tiendas pueden acceder
+ * Guard: Solo tiendas o admins pueden acceder
  */
 export async function requireStore() {
   await requireAuthenticatedUser("/tienda/dashboard");
   const storeCheck = await isStore();
+  const adminCheck = await isAdmin();
 
-  if (!storeCheck) {
+  if (!storeCheck && !adminCheck) {
     redirect("/");
   }
 }

@@ -13,18 +13,38 @@ declare global {
 
 type DireccionAutocompleteProps = {
   error?: string;
+  label?: string;
+  placeholder?: string;
+  name?: string;
+  value?: string;
   defaultValue?: string;
   defaultLat?: number;
   defaultLng?: number;
+  showMap?: boolean;
   onAddressChange?: (address: string, lat: number | null, lng: number | null, ciudad?: string) => void;
+  onPlaceChange?: (place: {
+    address: string;
+    city: string;
+    stateRegion: string;
+    postalCode: string;
+    country: string;
+    lat: number | null;
+    lng: number | null;
+  }) => void;
 };
 
 export function DireccionAutocomplete({
   error,
+  label = "Dirección",
+  placeholder = "Ingresa la dirección",
+  name = "direccion",
+  value,
   defaultValue = "",
   defaultLat,
   defaultLng,
+  showMap = true,
   onAddressChange,
+  onPlaceChange,
 }: DireccionAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -39,7 +59,7 @@ export function DireccionAutocomplete({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
-    if (!coords || !mapRef.current || !scriptReady || typeof google === "undefined") return;
+    if (!showMap || !coords || !mapRef.current || !scriptReady || typeof google === "undefined") return;
     const map = new google.maps.Map(mapRef.current, {
       center: coords,
       zoom: 16,
@@ -47,7 +67,10 @@ export function DireccionAutocomplete({
       zoomControl: true,
     });
     new google.maps.Marker({ position: coords, map });
-  }, [coords, scriptReady]);
+  }, [coords, scriptReady, showMap]);
+
+  const extractComponent = (components: google.maps.GeocoderAddressComponent[], type: string) =>
+    components.find((component) => component.types.includes(type))?.long_name ?? "";
 
   useEffect(() => {
     if (!scriptReady || !inputRef.current || typeof google === "undefined") return;
@@ -67,25 +90,40 @@ export function DireccionAutocomplete({
 
       const components: google.maps.GeocoderAddressComponent[] =
         place.address_components ?? [];
+      const route = extractComponent(components, "route");
+      const streetNumber = extractComponent(components, "street_number");
       const localidad =
-        components.find((c) => c.types.includes("locality"))?.long_name ??
-        components.find((c) => c.types.includes("sublocality"))?.long_name ??
+        extractComponent(components, "locality") ||
+        extractComponent(components, "administrative_area_level_2") ||
+        extractComponent(components, "sublocality") ||
         "";
+      const region = extractComponent(components, "administrative_area_level_1");
+      const postalCode = extractComponent(components, "postal_code");
+      const country = extractComponent(components, "country");
       setComuna(localidad);
 
       const location = place.geometry?.location;
-      if (!location) return;
+      const lat = location?.lat() ?? null;
+      const lng = location?.lng() ?? null;
 
-      const lat = location.lat();
-      const lng = location.lng();
-      setCoords({ lat, lng });
+      if (lat != null && lng != null) {
+        setCoords({ lat, lng });
+      }
 
-      // Call callback if provided
       onAddressChange?.(address, lat, lng, localidad);
+      onPlaceChange?.({
+        address: address || [route, streetNumber].filter(Boolean).join(" "),
+        city: localidad,
+        stateRegion: region,
+        postalCode,
+        country,
+        lat,
+        lng,
+      });
     });
 
     autocompleteRef.current = autocomplete;
-  }, [scriptReady, onAddressChange]);
+  }, [scriptReady, onAddressChange, onPlaceChange]);
 
   return (
     <>
@@ -100,17 +138,27 @@ export function DireccionAutocomplete({
 
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-700">Dirección</span>
+          <span className="font-medium text-zinc-700">{label}</span>
           <input
             ref={inputRef}
             required
-            name="direccion"
-            defaultValue={defaultValue}
-            onChange={() => {
+            name={name}
+            {...(value !== undefined ? { value } : { defaultValue })}
+            onChange={(event) => {
               setCoords(null);
               setComuna("");
+              onAddressChange?.(event.target.value, null, null, undefined);
+              onPlaceChange?.({
+                address: event.target.value,
+                city: "",
+                stateRegion: "",
+                postalCode: "",
+                country: "",
+                lat: null,
+                lng: null,
+              });
             }}
-            placeholder="Ingresa la dirección del evento"
+            placeholder={placeholder}
             autoComplete="off"
             className="rounded-xl border border-zinc-300 px-3 py-2.5 outline-none transition focus:border-zinc-900 aria-[invalid]:border-rose-400"
             aria-invalid={!!error || undefined}
@@ -118,10 +166,12 @@ export function DireccionAutocomplete({
           {error ? <span className="text-xs text-rose-600">{error}</span> : null}
         </label>
 
-        <div
-          ref={mapRef}
-          className={coords ? "h-48 w-full overflow-hidden rounded-xl border border-zinc-200" : "hidden"}
-        />
+        {showMap ? (
+          <div
+            ref={mapRef}
+            className={coords ? "h-48 w-full overflow-hidden rounded-xl border border-zinc-200" : "hidden"}
+          />
+        ) : null}
       </div>
 
       <input type="hidden" name="ciudad" value={comuna} />

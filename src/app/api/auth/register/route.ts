@@ -6,6 +6,16 @@ import { createClient } from "@/lib/supabase/server";
 const registerSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(6).max(128),
+  displayName: z.string().trim().min(2).max(80),
+  address: z.string().trim().min(3).max(250),
+  city: z.string().trim().min(2).max(100),
+  stateRegion: z.string().trim().min(1).max(100),
+  postalCode: z.string().trim().min(1).max(20),
+  country: z.string().trim().min(2).max(100),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
+  acceptTerms: z.boolean(),
+  receiveNews: z.boolean().default(false),
   nextPath: z.string().optional(),
 });
 
@@ -36,12 +46,28 @@ export async function POST(request: Request) {
   const appBase = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
   const callbackUrl = new URL(AUTH_CALLBACK_PATH, appBase);
   callbackUrl.searchParams.set("next", sanitizeNextPath(parsed.data.nextPath));
+  const nextPath = sanitizeNextPath(parsed.data.nextPath);
 
-  const { error } = await supabase.auth.signUp({
+  const userMetadata = {
+    display_name: parsed.data.displayName,
+    nombre_usuario: parsed.data.displayName,
+    direccion: parsed.data.address,
+    ciudad: parsed.data.city,
+    estado_region: parsed.data.stateRegion,
+    codigo_postal: parsed.data.postalCode,
+    pais: parsed.data.country,
+    latitud: parsed.data.latitude ?? null,
+    longitud: parsed.data.longitude ?? null,
+    accept_terms: parsed.data.acceptTerms,
+    receive_news: parsed.data.receiveNews,
+  };
+
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
       emailRedirectTo: callbackUrl.toString(),
+      data: userMetadata,
     },
   });
 
@@ -49,9 +75,15 @@ export async function POST(request: Request) {
     return Response.json({ error: error.message }, { status: 400 });
   }
 
+  const verificationRequired = !data.session;
+
   return Response.json(
     {
-      message: "Cuenta creada. Revisa tu correo para verificar la cuenta.",
+      message: verificationRequired
+        ? "Cuenta creada. Revisa tu correo y la carpeta de spam para verificar la cuenta."
+        : "Cuenta creada y sesión iniciada.",
+      redirectTo: verificationRequired ? null : nextPath,
+      verificationRequired,
     },
     { status: 201 },
   );
