@@ -1,5 +1,124 @@
 # TCG Torneos
 
+Proyecto Next.js + Supabase para gestionar torneos TCG (tiendas, torneos, inscripciones).
+
+Este README reúne todo lo necesario para descargar, configurar y ejecutar el proyecto, además de describir los flujos de autenticación y los endpoints relevantes.
+
+## Contenido
+- Requisitos
+- Instalación
+- Variables de entorno necesarias
+- Comandos útiles
+- Flujo de auth y endpoints
+- Base de datos & migraciones
+- Buenas prácticas
+
+## Requisitos
+- Node.js (>=18)
+- npm
+- Cuenta Supabase (proyecto con RLS habilitado)
+
+## Instalación
+
+1. Clona el repo:
+
+```bash
+git clone https://github.com/DiegoNPS/Tcg.git
+cd Tcg
+```
+
+2. Instala dependencias:
+
+```bash
+npm install
+```
+
+3. Variables de entorno: crea un `.env.local` en la raíz con al menos:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<your-supabase>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<anon-public-key>
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<optional>
+
+# Opcional (solo en servidores admin):
+SUPABASE_SERVICE_ROLE=<service-role-key>
+```
+
+Nota: `SUPABASE_SERVICE_ROLE` debe permanecer en entornos seguros (server, CI encrypted vars).
+
+## Comandos
+
+```bash
+# Desarrollo
+npm run dev
+
+# Lint
+npm run lint
+
+# Type check
+npm run typecheck
+
+# Build
+npm run build
+```
+
+## Flujo de autenticación (resumen)
+
+- Registro público: `POST /api/auth/register` (ya implementado). Crea usuario en Supabase y `profiles`.
+- Login: mediante SDK/OAuth (callbacks ya implementadas). Cookies httpOnly para SSR.
+- Recuperar contraseña:
+  - Iniciar: `POST /api/auth/password-reset` (envía email de recuperación)
+  - Confirmar (admin-backed): `POST /api/auth/password-reset/confirm` (requiere `SUPABASE_SERVICE_ROLE`) — este endpoint permite establecer nueva contraseña para `user_id`.
+  - Cambio por usuario autenticado: `PUT /api/auth/password-change` (requiere sesión).
+- Perfil: `PUT /api/auth/me` (upsert en `profiles`).
+- Admin crear usuario: `POST /api/admin/users` (requiere service role en servidor).
+
+Rutas y firmas están en `src/app/api/...`.
+
+## Endpoints principales
+
+- `POST /api/auth/register` — crear cuenta
+- `POST /api/auth/password-reset` — iniciar recuperación (email)
+- `POST /api/auth/password-reset/confirm` — confirmar nueva contraseña (admin)
+- `PUT /api/auth/password-change` — cambiar contraseña (autenticado)
+- `PUT /api/auth/me` — actualizar perfil
+- `POST /api/admin/users` — crear usuario (admin/service role)
+
+## Base de datos y migraciones
+
+El proyecto usa Supabase (Postgres + RLS). Las migraciones están en `supabase/migrations/`.
+Tablas clave:
+- `profiles` — perfil del usuario con `user_role` (`jugador` | `tienda`)
+- `tiendas` — tiendas (owner_id -> auth.users)
+- `torneos` — torneos publicados/privados
+- `tournament_entries` — inscripciones (nuevo modelo que sustituyó a `inscripciones`)
+
+Ver `supabase/migrations/` para los scripts y políticas RLS.
+
+## Testing y QA
+
+- Recomendado: crear pruebas de integración para flujos críticos (registro, login, reset, crear torneo, inscribir).
+- Sugerencia de herramientas: Jest + Supertest para endpoints, Playwright para E2E.
+
+## Despliegue
+
+- Asegurar variables de entorno en el host (Vercel/Netlify/Render) incluyendo `SUPABASE_SERVICE_ROLE` si se usa endpoint admin.
+- Revisar políticas RLS en el proyecto Supabase para que coincidan con lo definido en `supabase/migrations`.
+
+## Documentación y capturas
+
+Se recomienda agregar capturas de pantalla de la app y diagramas de flujo en esta sección antes del lanzamiento.
+
+## Recursos & ejemplos de README
+
+- Plantillas: https://github.com/topics/awesome-readme-template
+- Ejemplo de README detallado: https://github.com/supuna97/supuna97
+
+---
+Si querés, agrego un checklist de pruebas automáticas y ejemplos de requests curl para cada endpoint.
+# TCG Torneos
+
 Base funcional para gestionar torneos de Trading Card Games con Next.js 16 + Supabase SSR.
 
 ## Stack
