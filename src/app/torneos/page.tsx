@@ -34,6 +34,7 @@ const inscripcionMessages: Record<string, string> = {
   ok: "Inscripcion completada.",
   existente: "Ya estabas inscrito en este torneo.",
   error: "No se pudo completar la inscripcion.",
+  "no-jugador": "Solo jugadores pueden inscribirse a torneos.",
   "torneo-invalido": "El torneo solicitado no es valido.",
 };
 
@@ -116,13 +117,16 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
   const torneosInscritos = new Set<string>();
 
   if (user) {
-    const { data: inscripciones } = await supabase
-      .from("inscripciones")
-      .select("torneo_id")
-      .eq("jugador_id", user.id);
+    const { data: entries } = await supabase
+      .from("tournament_entries")
+      .select("torneo_id, status")
+      .eq("entry_type", "solo")
+      .eq("user_id", user.id);
 
-    inscripciones?.forEach((inscripcion) => {
-      torneosInscritos.add(inscripcion.torneo_id);
+    entries?.forEach((entry) => {
+      if (entry.status !== "dropped") {
+        torneosInscritos.add(entry.torneo_id);
+      }
     });
   }
 

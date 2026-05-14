@@ -82,14 +82,7 @@ export type Database = {
           tienda_id: string
           titulo: string
           descripcion: string
-          tcg_juego:
-            | "pokemon"
-            | "yugioh"
-            | "magic"
-            | "one_piece"
-            | "digimon"
-            | "lorcana"
-            | "otro"
+          tcg_juego: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
           categoria: "local" | "regional" | "premier" | "casual"
           ciudad: string
           direccion: string
@@ -108,14 +101,7 @@ export type Database = {
           tienda_id: string
           titulo: string
           descripcion: string
-          tcg_juego:
-            | "pokemon"
-            | "yugioh"
-            | "magic"
-            | "one_piece"
-            | "digimon"
-            | "lorcana"
-            | "otro"
+          tcg_juego: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
           categoria: "local" | "regional" | "premier" | "casual"
           ciudad: string
           direccion: string
@@ -134,14 +120,7 @@ export type Database = {
           tienda_id?: string
           titulo?: string
           descripcion?: string
-          tcg_juego?:
-            | "pokemon"
-            | "yugioh"
-            | "magic"
-            | "one_piece"
-            | "digimon"
-            | "lorcana"
-            | "otro"
+          tcg_juego?: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
           categoria?: "local" | "regional" | "premier" | "casual"
           ciudad?: string
           direccion?: string
@@ -165,75 +144,39 @@ export type Database = {
           }
         ]
       }
-      tournament_entries: {
+      inscripciones: {
         Row: {
           id: string
           torneo_id: string
-          entry_type: "solo" | "team"
-          user_id: string | null
-          team_id: string | null
-          status:
-            | "registered"
-            | "waitlisted"
-            | "checked_in"
-            | "seeded"
-            | "dropped"
-            | "eliminated"
-          registration_order: number
-          checked_in_at: string | null
-          metadata: Json
+          jugador_id: string
+          estado: "confirmada" | "cancelada"
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
           torneo_id: string
-          entry_type?: "solo" | "team"
-          user_id?: string | null
-          team_id?: string | null
-          status?:
-            | "registered"
-            | "waitlisted"
-            | "checked_in"
-            | "seeded"
-            | "dropped"
-            | "eliminated"
-          registration_order?: number
-          checked_in_at?: string | null
-          metadata?: Json
+          jugador_id: string
+          estado?: "confirmada" | "cancelada"
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           torneo_id?: string
-          entry_type?: "solo" | "team"
-          user_id?: string | null
-          team_id?: string | null
-          status?:
-            | "registered"
-            | "waitlisted"
-            | "checked_in"
-            | "seeded"
-            | "dropped"
-            | "eliminated"
-          registration_order?: number
-          checked_in_at?: string | null
-          metadata?: Json
+          jugador_id?: string
+          estado?: "confirmada" | "cancelada"
           created_at?: string
-          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "tournament_entries_torneo_id_fkey"
+            foreignKeyName: "inscripciones_torneo_id_fkey"
             columns: ["torneo_id"]
             isOneToOne: false
             referencedRelation: "torneos"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tournament_entries_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "inscripciones_jugador_id_fkey"
+            columns: ["jugador_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -248,23 +191,8 @@ export type Database = {
       tcg_juego: "pokemon" | "yugioh" | "magic" | "one_piece" | "digimon" | "lorcana" | "otro"
       categoria_torneo: "local" | "regional" | "premier" | "casual"
       estado_inscripcion: "confirmada" | "cancelada"
-      tournament_entry_type: "solo" | "team"
-      tournament_entry_status:
-        | "registered"
-        | "waitlisted"
-        | "checked_in"
-        | "seeded"
-        | "dropped"
-        | "eliminated"
     }
     CompositeTypes: {}
   }
 }
 
-export type UserRole = Database["public"]["Enums"]["user_role"]
-export type TcgJuego = Database["public"]["Enums"]["tcg_juego"]
-export type CategoriaTorneo = Database["public"]["Enums"]["categoria_torneo"]
-export type TournamentEntryType =
-  Database["public"]["Enums"]["tournament_entry_type"]
-export type TournamentEntryStatus =
-  Database["public"]["Enums"]["tournament_entry_status"]

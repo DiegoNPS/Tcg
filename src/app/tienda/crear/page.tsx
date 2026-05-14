@@ -1,10 +1,14 @@
+import { requireStore } from "@/lib/auth/guards";
 import { TiendaForm } from "@/components/forms/tienda-form";
 
 export const metadata = {
   title: "Crear tienda",
 };
 
-export default function CrearTiendaPage() {
+export default async function CrearTiendaPage() {
+  // Solo tiendas pueden crear tiendas
+  await requireStore();
+
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10">
       <header className="mb-6">

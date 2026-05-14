@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
-import { redirect } from "next/navigation";
 
+import { requireStore } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardPageProps = {
@@ -16,27 +16,17 @@ const errorMessages: Record<string, string> = {
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const params = await searchParams;
 
-  let supabase: Awaited<ReturnType<typeof createClient>>;
+  // Verificar que es tienda
+  await requireStore();
 
-  try {
-    supabase = await createClient();
-  } catch {
-    return (
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10">
-        <h1 className="text-2xl font-bold text-zinc-900">Dashboard de tienda</h1>
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY para habilitar el panel.
-        </p>
-      </main>
-    );
-  }
+  const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?next=/tienda/dashboard");
+    throw new Error("Usuario no encontrado");
   }
 
   const { data: tienda, error: tiendaError } = await supabase
