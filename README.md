@@ -1,181 +1,152 @@
-# TCG Torneos
+# TCG Hub (TCG Torneos)
 
-Proyecto Next.js + Supabase para gestionar torneos TCG (tiendas, torneos, inscripciones).
+Plataforma web para descubrir, publicar e inscribirse en torneos de Trading Card Games en Chile.
+Este README es la carta de presentacion del proyecto y tambien una guia tecnica completa
+para instalar, configurar y ejecutar la app.
 
-Este README reúne todo lo necesario para descargar, configurar y ejecutar el proyecto, además de describir los flujos de autenticación y los endpoints relevantes.
-
-## Contenido
+## Tabla de contenidos
+- Vision y objetivos
+- Flujo del producto
+- Capturas, resultados y novedades
+- Arquitectura
+- Stack tecnologico
 - Requisitos
-- Instalación
-- Variables de entorno necesarias
-- Comandos útiles
-- Flujo de auth y endpoints
-- Base de datos & migraciones
-- Buenas prácticas
+- Instalacion rapida
+- Variables de entorno
+- Base de datos y migraciones
+- Comandos
+- Rutas y API
+- Seguridad y roles
+- Despliegue
+- Estructura del proyecto
+- Equipo y licencia
+
+## Vision y objetivos
+
+TCG Hub centraliza la difusion de torneos TCG, resolviendo la fragmentacion actual en
+canales informales. La plataforma permite que tiendas administren eventos y que jugadores
+descubran torneos relevantes para ellos.
+
+Objetivos:
+- Centralizar la difusion de eventos TCG en una sola plataforma.
+- Facilitar la inscripcion de participantes a torneos.
+- Mejorar la visibilidad de tiendas organizadoras.
+
+## Flujo del producto
+
+**Jugadores**
+- Exploran torneos publicados en la portada.
+- Filtran por juego, categoria o ciudad.
+- Revisan detalle y se inscriben.
+
+**Tiendas**
+- Inician sesion y acceden a su panel.
+- Crean torneos (borrador o publicado).
+- Editan torneos existentes y gestionan su visibilidad.
+
+## Capturas, resultados y novedades
+
+- Capturas: agrega imagenes en `docs/screenshots/` y enlazalas aqui.
+- Resultados: resume hitos (MVP, pruebas con usuarios, despliegues).
+- Novedades: publica cambios relevantes por version.
+
+## Arquitectura
+
+Arquitectura serverless con separacion entre UI y backend gestionado por Supabase.
+
+```
+Cliente (Browser)
+  |
+  v
+Next.js (Vercel Edge)
+  - Client Components: UI interactiva
+  - Server Components: SSR / SSG / API Routes
+      |
+      v
+Supabase
+  - PostgreSQL: torneos, tiendas, inscripciones
+  - Auth: OAuth / Email
+  - Storage: imagenes y banners
+```
+
+## Stack tecnologico
+
+- Next.js (App Router)
+- Supabase (PostgreSQL, Auth, Storage)
+- TypeScript
+- Tailwind CSS
+- Zod
 
 ## Requisitos
-- Node.js (>=18)
+
+- Node.js 18+
 - npm
-- Cuenta Supabase (proyecto con RLS habilitado)
+- Cuenta Supabase con RLS habilitado
 
-## Instalación
+## Instalacion rapida
 
-1. Clona el repo:
+1. Clonar el repositorio:
 
 ```bash
 git clone https://github.com/DiegoNPS/Tcg.git
 cd Tcg
 ```
 
-2. Instala dependencias:
+2. Instalar dependencias:
 
 ```bash
 npm install
 ```
 
-3. Variables de entorno: crea un `.env.local` en la raíz con al menos:
+3. Crear `.env.local` en la raiz:
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://<your-supabase>.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<anon-public-key>
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<tu-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<tu-anon-key>
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<optional>
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<opcional>
 
-# Opcional (solo en servidores admin):
+# Solo servidor/CI (no exponer en cliente):
 SUPABASE_SERVICE_ROLE=<service-role-key>
 ```
 
-Nota: `SUPABASE_SERVICE_ROLE` debe permanecer en entornos seguros (server, CI encrypted vars).
-
-## Comandos
+4. Iniciar el servidor de desarrollo:
 
 ```bash
-# Desarrollo
 npm run dev
-
-# Lint
-npm run lint
-
-# Type check
-npm run typecheck
-
-# Build
-npm run build
 ```
-
-## Flujo de autenticación (resumen)
-
-- Registro público: `POST /api/auth/register` (ya implementado). Crea usuario en Supabase y `profiles`.
-- Login: mediante SDK/OAuth (callbacks ya implementadas). Cookies httpOnly para SSR.
-- Recuperar contraseña:
-  - Iniciar: `POST /api/auth/password-reset` (envía email de recuperación)
-  - Confirmar (admin-backed): `POST /api/auth/password-reset/confirm` (requiere `SUPABASE_SERVICE_ROLE`) — este endpoint permite establecer nueva contraseña para `user_id`.
-  - Cambio por usuario autenticado: `PUT /api/auth/password-change` (requiere sesión).
-- Perfil: `PUT /api/auth/me` (upsert en `profiles`).
-- Admin crear usuario: `POST /api/admin/users` (requiere service role en servidor).
-
-Rutas y firmas están en `src/app/api/...`.
-
-## Endpoints principales
-
-- `POST /api/auth/register` — crear cuenta
-- `POST /api/auth/password-reset` — iniciar recuperación (email)
-- `POST /api/auth/password-reset/confirm` — confirmar nueva contraseña (admin)
-- `PUT /api/auth/password-change` — cambiar contraseña (autenticado)
-- `PUT /api/auth/me` — actualizar perfil
-- `POST /api/admin/users` — crear usuario (admin/service role)
-
-## Base de datos y migraciones
-
-El proyecto usa Supabase (Postgres + RLS). Las migraciones están en `supabase/migrations/`.
-Tablas clave:
-- `profiles` — perfil del usuario con `user_role` (`jugador` | `tienda`)
-- `tiendas` — tiendas (owner_id -> auth.users)
-- `torneos` — torneos publicados/privados
-- `tournament_entries` — inscripciones (nuevo modelo que sustituyó a `inscripciones`)
-
-Ver `supabase/migrations/` para los scripts y políticas RLS.
-
-## Testing y QA
-
-- Recomendado: crear pruebas de integración para flujos críticos (registro, login, reset, crear torneo, inscribir).
-- Sugerencia de herramientas: Jest + Supertest para endpoints, Playwright para E2E.
-
-## Despliegue
-
-- Asegurar variables de entorno en el host (Vercel/Netlify/Render) incluyendo `SUPABASE_SERVICE_ROLE` si se usa endpoint admin.
-- Revisar políticas RLS en el proyecto Supabase para que coincidan con lo definido en `supabase/migrations`.
-
-## Documentación y capturas
-
-Se recomienda agregar capturas de pantalla de la app y diagramas de flujo en esta sección antes del lanzamiento.
-
-## Recursos & ejemplos de README
-
-- Plantillas: https://github.com/topics/awesome-readme-template
-- Ejemplo de README detallado: https://github.com/supuna97/supuna97
-
----
-Si querés, agrego un checklist de pruebas automáticas y ejemplos de requests curl para cada endpoint.
-# TCG Torneos
-
-Base funcional para gestionar torneos de Trading Card Games con Next.js 16 + Supabase SSR.
-
-## Stack
-
-- Next.js 16 (App Router + REST API)
-- Supabase (`@supabase/ssr`, `@supabase/supabase-js`)
-- Tailwind CSS 4
-- TypeScript estricto
-- Zod para validacion de mutaciones
 
 ## Variables de entorno
 
-Duplica `.env.example` como `.env.local` y completa:
+| Variable | Requerida | Descripcion |
+|---|---|---|
+| NEXT_PUBLIC_SUPABASE_URL | Si | URL del proyecto Supabase |
+| NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Si | Anon key de Supabase |
+| NEXT_PUBLIC_APP_URL | Si | URL base de la app (local o prod) |
+| NEXT_PUBLIC_GOOGLE_MAPS_API_KEY | No | Maps JS API + Places API habilitadas |
+| SUPABASE_SERVICE_ROLE | No | Solo para endpoints admin en servidor |
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
-```
+Notas:
+- `SUPABASE_SERVICE_ROLE` nunca debe estar disponible en el cliente.
+- Google Maps requiere billing habilitado en Google Cloud.
 
-En Vercel configura las mismas 2 variables para Preview y Production.
+## Base de datos y migraciones
 
-## Autenticación (Estándar 2026)
+Las migraciones viven en `supabase/migrations/` y se ejecutan desde el SQL Editor de Supabase.
 
-El proyecto soporta dos métodos de autenticación modernos:
+Orden recomendado:
+- `202604220001_init.sql` (tablas base y RLS)
+- `202605010001_torneos_coords.sql` (latitud/longitud en torneos)
+- `202605010002_torneos_imagen.sql` (imagen_url y bucket de storage)
+- `202605080001_tcg_bucket.sql` (bucket adicional si aplica)
 
-**1. Email + Contraseña:**
-- Registrarse: `POST /api/auth/register` (email + password)
-- Iniciar sesión: `POST /api/auth/login` (email + password)
-- UI en `/login` y `/signup`
+Tablas clave:
+- `profiles` (roles: `jugador` | `tienda`)
+- `tiendas`
+- `torneos`
+- `tournament_entries`
 
-**2. Google OAuth:**
-Para habilitar Google:
-
-1. En Supabase ve a Authentication > Providers > Google y habilita el provider.
-2. Crea credenciales OAuth en Google Cloud (OAuth client ID tipo Web application).
-3. Agrega estos Authorized redirect URIs en Google Cloud:
-	- `https://<TU_PROJECT_REF>.supabase.co/auth/v1/callback`
-4. Copia Client ID y Client Secret en Supabase (provider Google).
-5. En Supabase > Authentication > URL Configuration define:
-	- Site URL: `http://localhost:3000` (local) y luego tu dominio de produccion.
-	- Additional Redirect URLs:
-	  - `http://localhost:3000/auth/callback`
-	  - `https://tu-dominio.com/auth/callback`
-6. Verifica que tu app tenga:
-	- `NEXT_PUBLIC_SUPABASE_URL`
-	- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-7. Reinicia `npm run dev` y prueba `/login` con el botón "Continuar con Google".
-
-## Base de datos
-
-Ejecuta en Supabase SQL Editor:
-
-- `supabase/migrations/202604220001_init.sql`
-
-Eso crea tablas `tiendas`, `torneos`, `inscripciones`, enums y politicas RLS.
-
-## Scripts
+## Comandos
 
 ```bash
 npm run dev
@@ -186,63 +157,74 @@ npm run build
 
 ## Rutas principales
 
-- `/` listado publico de torneos con filtros por query params.
-- `/login` iniciar sesión (email/password o Google).
-- `/signup` crear cuenta (email/password).
-- `/auth/callback` intercambio de codigo por sesion.
-- `/tienda/dashboard` panel privado para tienda.
-- `/tienda/nuevo-torneo` formulario y publicacion de torneos.
+- `/` listado publico de torneos con filtros.
+- `/login` inicio de sesion.
+- `/signup` registro.
+- `/auth/callback` callback OAuth.
+- `/tienda/dashboard` panel privado de tienda.
+- `/tienda/nuevo-torneo` creacion de torneos.
 
-## API HTTP
+## API (REST)
 
-Endpoints disponibles para consumo externo (REST):
-**Autenticación:**
-- `POST /api/auth/register`: crea cuenta con email/password.
-- `POST /api/auth/login`: inicia sesión con email/password.
+**Autenticacion**
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/password-reset`
+- `POST /api/auth/password-reset/confirm`
+- `PUT /api/auth/password-change`
+- `PUT /api/auth/me`
 
-**Torneos (públicos):**
-- `GET /api/torneos`: lista torneos publicados.
-	- Filtros opcionales: `juego`, `categoria`, `ciudad`.
-- `GET /api/torneos/:id`: detalle de un torneo publicado.
-s:
+**Admin**
+- `POST /api/admin/users`
+- `POST /api/admin/roles`
 
-**Registro:**
-```json
-{
-	"email": "duelista@ejemplo.com",
-	"password": "secreto123",
-	"nextPath": "/tienda/dashboard"
-}
+**Torneos**
+- `GET /api/torneos` (filtros: `juego`, `categoria`, `ciudad`)
+- `GET /api/torneos/:id`
+- `POST /api/torneos/crear`
+- `PUT /api/torneos/:id/editar`
+
+**Tiendas**
+- `POST /api/tiendas`
+
+**Inscripciones**
+- `POST /api/inscripciones`
+
+## Seguridad y roles
+
+- `profiles.user_role` define si un usuario es `jugador`, `tienda` o `admin`.
+- El panel `/admin` usa el client de servicio del servidor para revisar usuarios, tiendas, torneos e inscripciones.
+- Cambios de rol deben ejecutarse en el servidor mediante `SUPABASE_SERVICE_ROLE`.
+- RLS asegura que cada tienda solo administre sus propios torneos.
+
+## Despliegue
+
+Despliegue recomendado en Vercel:
+- Configura las variables de entorno en Preview y Production.
+- Verifica las politicas RLS y los buckets en Supabase.
+- Si usas endpoints admin, configura `SUPABASE_SERVICE_ROLE` solo en entorno server.
+
+## Estructura del proyecto
+
+```
+src/
+  app/                # Rutas y API (App Router)
+  components/         # UI y formularios
+  lib/                # Constantes, auth y Supabase clients
+  types/              # Tipos TS del esquema
+supabase/
+  migrations/         # Migraciones SQL
+docs/                 # Documentacion tecnica
 ```
 
-**Login:**
-```json
-{
-	"email": "duelista@ejemplo.com",
-	"password": "secreto123"
-}
-```
+## Equipo y licencia
 
-**Crear tienda:**
-```json
-{
-	"nombre": "TCG Santiago Centro",
-	"ciudad": "Santiago"
-}
-```
+Proyecto academico DUOC UC (Ingenieria en Informatica).
 
-**Inscribirse:**```json
-{
-	"nombre": "TCG Santiago Centro",
-	"ciudad": "Santiago"
-}
-```
-
-```json
-{
-	"torneo_id": "00000000-0000-0000-0000-000000000000"
-}
-```
+Equipo:
+- Alvaro Cabezas P. (Lider / Analista Funcional)
+- Diego Pena S. (DBA / Frontend)
+- Federico Pereira (Backend / Otros)
 
 ## Flujo recomendado de verificacion
 
@@ -283,3 +265,5 @@ curl -X POST https://tu-app.com/api/admin/roles \
 ```
 
 Nota: llama este endpoint solo desde entornos de servidor; protege su acceso con controles adicionales si fuera necesario (IP allowlist, admin auth, etc.).
+
+Licencia: uso academico.

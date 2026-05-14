@@ -76,7 +76,7 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
 
   if (juego) {
     query = query.eq("tcg_juego", juego);
-  }
+  }http://localhost:3000/
 
   if (categoria) {
     query = query.eq("categoria", categoria);
