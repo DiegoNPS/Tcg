@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import type { Database } from "@/types/database.types";
 
-import { DEFAULT_POST_LOGIN_PATH, LOGIN_PATH, SIGNUP_PATH } from "@/lib/auth/routes";
+import { LOGIN_PATH, SIGNUP_PATH } from "@/lib/auth/routes";
+import { resolvePostLoginPath } from "@/lib/auth/post-login";
 import { getSupabaseEnv } from "./config";
 
 const PRIVATE_PREFIXES = ["/tienda", "/admin"];
@@ -69,14 +70,14 @@ export async function updateSession(request: NextRequest) {
 
   if (pathname === LOGIN_PATH && user) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = DEFAULT_POST_LOGIN_PATH;
+    redirectUrl.pathname = await resolvePostLoginPath(supabase, user.id);
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
 
   if (pathname === SIGNUP_PATH && user) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = DEFAULT_POST_LOGIN_PATH;
+    redirectUrl.pathname = await resolvePostLoginPath(supabase, user.id);
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

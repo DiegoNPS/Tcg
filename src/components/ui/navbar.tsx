@@ -1,4 +1,4 @@
-import { Home, LayoutDashboard, PlusCircle, Shield, Store, Ticket, Trophy } from "lucide-react";
+import { Home, LayoutDashboard, PlusCircle, Shield, Store, Ticket, Trophy, User } from "lucide-react";
 import Link from "next/link";
 
 import { signOut } from "@/actions/auth";
@@ -9,6 +9,7 @@ export async function Navbar() {
   let userEmail: string | null = null;
   let isTienda = false;
   let isAdmin = false;
+  let isJugador = false;
 
   try {
     const supabase = await createClient();
@@ -26,6 +27,7 @@ export async function Navbar() {
 
       isTienda = Boolean(tienda);
       isAdmin = profile?.user_role === "admin";
+      isJugador = profile?.user_role === "jugador";
     }
   } catch {
     userEmail = null;
@@ -73,6 +75,25 @@ export async function Navbar() {
               >
                 <PlusCircle className="size-4" />
                 Nuevo torneo
+              </Link>
+            </>
+          ) : null}
+
+          {isJugador ? (
+            <>
+              <Link
+                href="/jugador/inscripciones"
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-zinc-700 transition hover:bg-zinc-100"
+              >
+                <User className="size-4" />
+                Mis inscripciones
+              </Link>
+              <Link
+                href="/jugador/perfil"
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-zinc-700 transition hover:bg-zinc-100"
+              >
+                <User className="size-4" />
+                Mi perfil
               </Link>
             </>
           ) : null}

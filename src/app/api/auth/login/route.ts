@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { resolvePostLoginPath } from "@/lib/auth/post-login";
 import { createClient } from "@/lib/supabase/server";
 
 const loginSchema = z.object({
@@ -33,8 +34,14 @@ export async function POST(request: Request) {
     return Response.json({ error: error.message }, { status: 401 });
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const redirectTo = user ? await resolvePostLoginPath(supabase, user.id) : "/torneos";
+
   return Response.json(
-    { message: "Sesión iniciada correctamente" },
+    { message: "Sesión iniciada correctamente", redirectTo },
     { status: 200 },
   );
 }

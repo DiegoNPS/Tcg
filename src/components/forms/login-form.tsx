@@ -73,7 +73,8 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         return;
       }
 
-      router.push(nextPath);
+      const payload = await response.json();
+      router.push(payload.redirectTo || nextPath);
     } catch {
       setMessage("Error de conexión. Intenta nuevamente.");
     } finally {
