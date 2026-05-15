@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 
-import { requireStore } from "@/lib/auth/guards";
+import { requireAuthenticatedUser } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardPageProps = {
@@ -17,8 +17,8 @@ const errorMessages: Record<string, string> = {
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const params = await searchParams;
 
-  // Verificar que es tienda
-  await requireStore();
+  // Solo necesitamos una sesión; si no tiene tienda, mostramos el estado vacío.
+  await requireAuthenticatedUser("/tienda/dashboard");
 
   const supabase = await createClient();
 
@@ -62,7 +62,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const { data: torneos, error: torneosError } = await supabase
     .from("torneos")
-    .select("id, titulo, fecha_inicio, juego_id, categoria_id, ciudad_id, publicado")
+    .select("id, titulo, fecha_inicio, juego_id, categoria_id, publicado")
     .eq("tienda_id", tiendaAny.id)
     .order("fecha_inicio", { ascending: false });
 
@@ -77,10 +77,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? ((await supabase.from("ciudades").select("nombre").eq("id", tiendaAny.ciudad_id).maybeSingle()) as any).data?.nombre ?? null
     : null;
 
-  // resolve juegos/categorias/ciudades for torneos
+  // resolve juegos/categorias for torneos; ciudad viene desde la tienda
   const juegoIds = Array.from(new Set((torneos ?? []).map((t: any) => t.juego_id).filter(Boolean)));
   const categoriaIds = Array.from(new Set((torneos ?? []).map((t: any) => t.categoria_id).filter(Boolean)));
-  const ciudadIds = Array.from(new Set((torneos ?? []).map((t: any) => t.ciudad_id).filter(Boolean)));
 
   const juegosMap = new Map<string, string>();
   if (juegoIds.length > 0) {
@@ -94,17 +93,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     (categorias ?? []).forEach((c: any) => categoriasMap.set(c.id, c.key));
   }
 
-  const ciudadesMap = new Map<string, string>();
-  if (ciudadIds.length > 0) {
-    const { data: ciudades } = await supabase.from("ciudades").select("id, nombre").in("id", ciudadIds);
-    (ciudades ?? []).forEach((c: any) => ciudadesMap.set(c.id, c.nombre));
-  }
-
   const torneosWithNames = (torneos ?? []).map((torneo: any) => ({
     ...torneo,
     tcg_juego: torneo.juego_id ? juegosMap.get(torneo.juego_id) ?? null : null,
     categoria: torneo.categoria_id ? categoriasMap.get(torneo.categoria_id) ?? null : null,
-    ciudad: torneo.ciudad_id ? ciudadesMap.get(torneo.ciudad_id) ?? null : null,
+    ciudad: tiendaCiudadName,
   }));
 
   return (

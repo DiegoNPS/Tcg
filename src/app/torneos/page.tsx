@@ -2,7 +2,7 @@ import { TorneoCard } from "@/components/cards/torneo-card";
 import { TorneosFilters } from "@/components/home/torneos-filters";
 import { CATEGORIA_OPTIONS, TCG_OPTIONS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
-import type { CategoriaTorneo, TcgJuego } from "@/types/database.types";
+import type { CategoriaTorneo } from "@/types/database.types";
 
 type TorneosPageProps = {
   searchParams: Promise<{
@@ -17,14 +17,9 @@ function getSingleParam(param: string | string[] | undefined) {
   return Array.isArray(param) ? param[0] : param;
 }
 
-const validJuegos = new Set<TcgJuego>(TCG_OPTIONS.map((option) => option.value));
 const validCategorias = new Set<CategoriaTorneo>(
   CATEGORIA_OPTIONS.map((option) => option.value),
 );
-
-function isTcgJuego(value: string): value is TcgJuego {
-  return validJuegos.has(value as TcgJuego);
-}
 
 function isCategoriaTorneo(value: string): value is CategoriaTorneo {
   return validCategorias.has(value as CategoriaTorneo);
@@ -46,7 +41,6 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
   const ciudadRaw = getSingleParam(params.ciudad);
   const inscripcionCode = getSingleParam(params.inscripcion);
 
-  const juego: TcgJuego | "" = juegoRaw && isTcgJuego(juegoRaw) ? juegoRaw : "";
   const categoria: CategoriaTorneo | "" =
     categoriaRaw && isCategoriaTorneo(categoriaRaw) ? categoriaRaw : "";
   const ciudad = ciudadRaw?.trim() ?? "";
@@ -65,6 +59,13 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
       </main>
     );
   }
+
+  const { data: juegos } = await supabase.from("juegos").select("id, key, nombre").order("nombre", { ascending: true });
+  const gameOptions = (juegos ?? []).length
+    ? (juegos ?? []).map((juego) => ({ value: juego.key, label: juego.nombre }))
+    : TCG_OPTIONS;
+  const validJuegos = new Set(gameOptions.map((option) => option.value));
+  const juego: string = juegoRaw && validJuegos.has(juegoRaw) ? juegoRaw : "";
 
   // Resolve filter values to IDs in lookup tables
   let juegoId: string | undefined;
@@ -221,6 +222,7 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
           categoria,
           ciudad,
         }}
+        juegos={gameOptions}
       />
 
       {torneos?.length ? (

@@ -1,4 +1,4 @@
-import { requireStore } from "@/lib/auth/guards";
+import { requireAuthenticatedUser } from "@/lib/auth/guards";
 import { TiendaForm } from "@/components/forms/tienda-form";
 
 export const metadata = {
@@ -6,8 +6,8 @@ export const metadata = {
 };
 
 export default async function CrearTiendaPage() {
-  // Solo tiendas pueden crear tiendas
-  await requireStore();
+  // Cualquier usuario autenticado puede crear una tienda.
+  await requireAuthenticatedUser("/tienda/crear");
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10">

@@ -22,7 +22,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { data: torneo, error } = await supabase
     .from("torneos")
     .select(
-      "id, tienda_id, titulo, descripcion, juego_id, categoria_id, ciudad_id, direccion, fecha_inicio, cupo_maximo, costo_entrada, imagen_url, latitud, longitud, publicado",
+      "id, tienda_id, titulo, descripcion, juego_id, categoria_id, direccion, fecha_inicio, cupo_maximo, costo_entrada, imagen_url, latitud, longitud, publicado",
     )
     .eq("id", parsed.data)
     .maybeSingle();
@@ -39,14 +39,16 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data: tienda } = await supabase
     .from("tiendas")
-    .select("nombre")
+    .select("nombre, ciudad_id")
     .eq("id", torneoAny.tienda_id)
     .maybeSingle();
 
   // Resolve names
   const juego = torneoAny.juego_id ? await supabase.from("juegos").select("key").eq("id", torneoAny.juego_id).maybeSingle() : null;
   const categoria = torneoAny.categoria_id ? await supabase.from("categorias_torneo").select("key").eq("id", torneoAny.categoria_id).maybeSingle() : null;
-  const ciudad = torneoAny.ciudad_id ? await supabase.from("ciudades").select("nombre").eq("id", torneoAny.ciudad_id).maybeSingle() : null;
+  const ciudad = tienda?.ciudad_id
+    ? await supabase.from("ciudades").select("nombre").eq("id", tienda.ciudad_id).maybeSingle()
+    : null;
 
   return Response.json(
     {

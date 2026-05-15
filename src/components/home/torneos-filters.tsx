@@ -5,15 +5,21 @@ import { useTransition } from "react";
 
 import { CATEGORIA_OPTIONS, TCG_OPTIONS } from "@/lib/constants";
 
+type GameOption = {
+  value: string;
+  label: string;
+};
+
 type TorneosFiltersProps = {
   initialValues: {
     juego: string;
     categoria: string;
     ciudad: string;
   };
+  juegos: GameOption[];
 };
 
-export function TorneosFilters({ initialValues }: TorneosFiltersProps) {
+export function TorneosFilters({ initialValues, juegos }: TorneosFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,11 +58,21 @@ export function TorneosFilters({ initialValues }: TorneosFiltersProps) {
             className="rounded-xl border border-zinc-300 px-3 py-2 outline-none transition focus:border-zinc-900"
           >
             <option value="">Todos</option>
-            {TCG_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {juegos.length ? (
+              juegos.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            ) : (
+              <>
+                {TCG_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </>
+            )}
           </select>
         </label>
 

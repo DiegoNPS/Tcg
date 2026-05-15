@@ -26,9 +26,15 @@ export async function requireAuthenticatedUser(nextPath: string) {
  * Guard: Solo tiendas o admins pueden acceder
  */
 export async function requireStore() {
-  await requireAuthenticatedUser("/tienda/dashboard");
-  const storeCheck = await isStore();
-  const adminCheck = await isAdmin();
+  const { supabase, user } = await requireAuthenticatedUser("/tienda/dashboard");
+
+  const [{ data: tienda }, { data: profile }] = await Promise.all([
+    supabase.from("tiendas").select("id").eq("owner_id", user.id).maybeSingle(),
+    supabase.from("profiles").select("user_role").eq("user_id", user.id).maybeSingle(),
+  ]);
+
+  const storeCheck = Boolean(tienda);
+  const adminCheck = profile?.user_role === "admin";
 
   if (!storeCheck && !adminCheck) {
     redirect("/");
