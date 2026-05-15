@@ -192,7 +192,7 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
       .eq("user_id", user.id);
 
     entries?.forEach((entry) => {
-      if (entry.status !== "dropped") {
+      if (entry.status !== "dropped" && entry.status !== "eliminated") {
         torneosInscritos.add(entry.torneo_id);
       }
     });
