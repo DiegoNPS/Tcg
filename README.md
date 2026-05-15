@@ -194,7 +194,7 @@ npm run build
 
 - `profiles.user_role` define si un usuario es `jugador`, `tienda` o `admin`.
 - El panel `/admin` usa el client de servicio del servidor para revisar usuarios, tiendas, torneos e inscripciones.
-- Cambios de rol deben ejecutarse en el servidor mediante `SUPABASE_SERVICE_ROLE`.
+- Cambios de rol se ejecutan en el servidor mediante `SUPABASE_SERVICE_ROLE`.
 - RLS asegura que cada tienda solo administre sus propios torneos.
 
 ## Despliegue
@@ -236,18 +236,15 @@ Equipo:
 
 ## Roles y seguridad (nota importante)
 
-- El proyecto distingue tres roles de usuario en `profiles.user_role`: `jugador`, `tienda` y `admin`.
-- El panel de administración vive en `/admin` y usa el client de servicio del servidor para revisar usuarios, tiendas, torneos e inscripciones.
-- Para evitar elevaciones de privilegio, los cambios de rol desde el propio usuario están restringidos. El endpoint `PUT /api/auth/me` ya no permite que un usuario cambie su `user_role` arbitrariamente; los cambios deben gestionarse por un administrador o mediante procesos de servicio que usen `SUPABASE_SERVICE_ROLE`.
-- `SUPABASE_SERVICE_ROLE` es una credencial sensible que **NUNCA** debe exponerse en clientes. Configúrala solo en variables de entorno de servidor/CI.
-- Si necesitas que un usuario pase de `jugador` a `tienda` en tu flujo, implementa un proceso de aprobación (admin) que use el endpoint admin con service role para actualizar `profiles.user_role`.
+- Para evitar elevaciones de privilegio, los cambios de rol desde el propio usuario estan restringidos.
+- El endpoint `PUT /api/auth/me` no permite que un usuario cambie su `user_role` arbitrariamente.
+- Los cambios deben gestionarse por un administrador o mediante procesos de servicio que usen `SUPABASE_SERVICE_ROLE`.
+- `SUPABASE_SERVICE_ROLE` es una credencial sensible que nunca debe exponerse en clientes.
 
 Roles disponibles en la app:
 - `jugador`: se inscribe y consulta sus torneos.
 - `tienda`: crea tiendas y publica torneos.
 - `admin`: gestiona usuarios, tiendas, torneos e inscripciones desde `/admin`.
-
-Si querés, puedo añadir un endpoint admin para asignar roles y una guía paso a paso para el proceso de aprobación.
 
 ### Endpoint admin para asignar roles
 
