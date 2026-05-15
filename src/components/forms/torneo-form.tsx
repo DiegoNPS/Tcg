@@ -73,9 +73,7 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
     setDireccion(addr);
     setLatitud(lat);
     setLongitud(lng);
-    if (ciudad) {
-      setCiudad(ciudad);
-    }
+    setCiudad(ciudad ?? "");
   };
 
   useEffect(() => {
