@@ -20,7 +20,9 @@ export default async function EditarTorneoPage({ params }: EditarTorneoPageProps
 
   const { data: torneo } = await supabase
     .from("torneos")
-    .select("*, tienda:tiendas(owner_id)")
+    .select(
+      "*, tienda:tiendas(owner_id), juego:juegos(id, key, nombre), categoria:categorias_torneo(id, key, nombre)",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -42,8 +44,8 @@ export default async function EditarTorneoPage({ params }: EditarTorneoPageProps
           id,
           titulo: torneo.titulo,
           descripcion: torneo.descripcion,
-          tcg_juego: torneo.tcg_juego,
-          categoria: torneo.categoria,
+          tcg_juego: (torneo.juego?.key as import("@/types/database.types").TcgJuego) ?? undefined,
+          categoria: (torneo.categoria?.key as import("@/types/database.types").CategoriaTorneo) ?? undefined,
           direccion: torneo.direccion,
           fecha_inicio: torneo.fecha_inicio,
           cupo_maximo: torneo.cupo_maximo,

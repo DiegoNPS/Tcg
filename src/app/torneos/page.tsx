@@ -66,25 +66,51 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
     );
   }
 
+  // Resolve filter values to IDs in lookup tables
+  let juegoId: string | undefined;
+  let categoriaId: string | undefined;
+  let tiendaIdsForCiudad: string[] | undefined;
+
+  if (juego) {
+    const { data: juegoRow } = await supabase.from("juegos").select("id").eq("key", juego).maybeSingle();
+    juegoId = juegoRow?.id;
+  }
+
+  if (categoria) {
+    const { data: categoriaRow } = await supabase
+      .from("categorias_torneo")
+      .select("id")
+      .eq("key", categoria)
+      .maybeSingle();
+    categoriaId = categoriaRow?.id;
+  }
+
+  if (ciudad) {
+    const { data: ciudades } = await supabase
+      .from("ciudades")
+      .select("id")
+      .ilike("nombre", `%${ciudad}%`);
+
+    const ciudadIds = (ciudades ?? []).map((c) => c.id);
+    if (ciudadIds.length > 0) {
+      const { data: tiendas } = await supabase.from("tiendas").select("id").in("ciudad_id", ciudadIds);
+      tiendaIdsForCiudad = (tiendas ?? []).map((t) => t.id);
+    } else {
+      tiendaIdsForCiudad = [];
+    }
+  }
+
   let query = supabase
     .from("torneos")
     .select(
-      "id, tienda_id, titulo, descripcion, tcg_juego, categoria, ciudad, direccion, fecha_inicio, cupo_maximo, costo_entrada, imagen_url, latitud, longitud",
+      "id, tienda_id, titulo, descripcion, juego_id, categoria_id, direccion, fecha_inicio, cupo_maximo, costo_entrada, imagen_url, latitud, longitud",
     )
     .eq("publicado", true)
     .order("fecha_inicio", { ascending: true });
 
-  if (juego) {
-    query = query.eq("tcg_juego", juego);
-  }
-
-  if (categoria) {
-    query = query.eq("categoria", categoria);
-  }
-
-  if (ciudad) {
-    query = query.ilike("ciudad", `%${ciudad}%`);
-  }
+  if (juegoId) query = query.eq("juego_id", juegoId);
+  if (categoriaId) query = query.eq("categoria_id", categoriaId);
+  if (tiendaIdsForCiudad) query = query.in("tienda_id", tiendaIdsForCiudad);
 
   const { data: torneos, error: torneosError } = await query;
 
@@ -98,7 +124,7 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
   if (tiendaIds.length > 0) {
     const { data: tiendas, error: tiendasError } = await supabase
       .from("tiendas")
-      .select("id, nombre")
+      .select("id, nombre, ciudad_id")
       .in("id", tiendaIds);
 
     if (tiendasError) {
@@ -109,6 +135,47 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
       tiendaMap.set(tienda.id, tienda.nombre);
     });
   }
+
+  // resolve juegos, categorias and ciudades for display
+  const juegoIds = Array.from(new Set((torneos ?? []).map((t) => t.juego_id).filter(Boolean))) as string[];
+  const categoriaIds = Array.from(new Set((torneos ?? []).map((t) => t.categoria_id).filter(Boolean))) as string[];
+
+  const juegoMap = new Map<string, string>();
+  const categoriaMap = new Map<string, string>();
+  const ciudadMap = new Map<string, string>();
+
+  if (juegoIds.length > 0) {
+    const { data: juegos } = await supabase.from("juegos").select("id, key, nombre").in("id", juegoIds);
+    juegos?.forEach((j) => juegoMap.set(j.id, j.key ?? j.nombre));
+  }
+
+  if (categoriaIds.length > 0) {
+    const { data: categorias } = await supabase
+      .from("categorias_torneo")
+      .select("id, key, nombre")
+      .in("id", categoriaIds);
+    categorias?.forEach((c) => categoriaMap.set(c.id, c.key ?? c.nombre));
+  }
+
+  // collect ciudad_ids from tiendas we already fetched
+  const tiendaRows = (await supabase.from("tiendas").select("id, nombre, ciudad_id").in("id", tiendaIds)).data ?? [] as { id: string; nombre: string; ciudad_id?: string | null }[];
+  const ciudadIds = Array.from(new Set(tiendaRows.map((t) => t.ciudad_id).filter(Boolean))) as string[];
+  if (ciudadIds.length > 0) {
+    const { data: ciudades } = await supabase.from("ciudades").select("id, nombre").in("id", ciudadIds);
+    ciudades?.forEach((c) => ciudadMap.set(c.id, c.nombre));
+  }
+
+  // build enriched torneos with display fields expected by TorneoCard
+  const enrichedTorneos = (torneos ?? []).map((t) => {
+    const tiendaRow = tiendaRows.find((tr) => tr.id === t.tienda_id);
+    return {
+      ...t,
+      tcg_juego: juegoMap.get(t.juego_id ?? "") ?? "otro",
+      categoria: categoriaMap.get(t.categoria_id ?? "") ?? "casual",
+      ciudad: tiendaRow ? ciudadMap.get(tiendaRow.ciudad_id ?? "") ?? "" : "",
+      tiendaNombre: tiendaMap.get(t.tienda_id) ?? "Tienda independiente",
+    };
+  });
 
   const {
     data: { user },
@@ -158,13 +225,10 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
 
       {torneos?.length ? (
         <section className="grid gap-4 sm:grid-cols-3">
-          {torneos.map((torneo) => (
+          {enrichedTorneos.map((torneo) => (
             <TorneoCard
               key={torneo.id}
-              torneo={{
-                ...torneo,
-                tiendaNombre: tiendaMap.get(torneo.tienda_id) ?? "Tienda independiente",
-              }}
+              torneo={torneo}
               canInscribirse={Boolean(user)}
               yaInscripto={torneosInscritos.has(torneo.id)}
             />
@@ -181,3 +245,4 @@ export default async function TorneosPage({ searchParams }: TorneosPageProps) {
     </main>
   );
 }
+

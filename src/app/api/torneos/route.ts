@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 
 import { CATEGORIA_OPTIONS, TCG_OPTIONS } from "@/lib/constants";
@@ -55,33 +56,47 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
 
+  // If filtering by juego/categoria, resolve their ids first
+  const juegoIds: string[] = [];
+  if (juegoFiltro) {
+    const { data: jdata } = await (supabase.from("juegos").select("id").eq("key", juegoFiltro).limit(1).maybeSingle() as any);
+    const jdataAny = jdata as any;
+    if (jdataAny) juegoIds.push(jdataAny.id);
+  }
+
+  const categoriaIds: string[] = [];
+  if (categoriaFiltro) {
+    const { data: cdata } = await (supabase.from("categorias_torneo").select("id").eq("key", categoriaFiltro).limit(1).maybeSingle() as any);
+    const cdataAny = cdata as any;
+    if (cdataAny) categoriaIds.push(cdataAny.id);
+  }
+
+  let ciudadIds: string[] = [];
+  if (ciudad) {
+    const { data: cids } = await supabase.from("ciudades").select("id").ilike("nombre", `%${ciudad}%`);
+    ciudadIds = (cids ?? []).map((r: any) => r.id);
+  }
+
   let query = supabase
     .from("torneos")
     .select(
-      "id, tienda_id, titulo, descripcion, tcg_juego, categoria, ciudad, direccion, fecha_inicio, cupo_maximo, costo_entrada, imagen_url, latitud, longitud",
+      "id, tienda_id, titulo, descripcion, juego_id, categoria_id, ciudad_id, direccion, fecha_inicio, cupo_maximo, costo_entrada, imagen_url, latitud, longitud",
     )
     .eq("publicado", true)
     .order("fecha_inicio", { ascending: true });
 
-  if (juegoFiltro) {
-    query = query.eq("tcg_juego", juegoFiltro);
-  }
+  if (juegoIds.length > 0) query = query.in("juego_id", juegoIds);
+  if (categoriaIds.length > 0) query = query.in("categoria_id", categoriaIds);
+  if (ciudadIds.length > 0) query = query.in("ciudad_id", ciudadIds);
 
-  if (categoriaFiltro) {
-    query = query.eq("categoria", categoriaFiltro);
-  }
-
-  if (ciudad) {
-    query = query.ilike("ciudad", `%${ciudad}%`);
-  }
-
-  const { data: torneos, error: torneosError } = await query;
+  const { data: torneos, error: torneosError } = await query as any;
 
   if (torneosError) {
     return Response.json({ error: "No se pudieron cargar los torneos" }, { status: 500 });
   }
 
-  const tiendaIds = Array.from(new Set((torneos ?? []).map((torneo) => torneo.tienda_id)));
+  const torneosList = (torneos ?? []) as any[];
+  const tiendaIds = Array.from(new Set(torneosList.map((torneo) => torneo.tienda_id)));
   const tiendaMap = new Map<string, string>();
 
   if (tiendaIds.length > 0) {
@@ -99,10 +114,38 @@ export async function GET(request: Request) {
     });
   }
 
-  const items = (torneos ?? []).map((torneo) => ({
+  // intermediate `items` removed; building `finalItems` below
+
+  // Resolve names for juegos, categorias and ciudades
+  const juegoIdsAll = Array.from(new Set(torneosList.map((t) => t.juego_id).filter(Boolean)));
+  const categoriaIdsAll = Array.from(new Set(torneosList.map((t) => t.categoria_id).filter(Boolean)));
+  const ciudadIdsAll = Array.from(new Set(torneosList.map((t) => t.ciudad_id).filter(Boolean)));
+
+  const juegosMap = new Map<string, string>();
+  if (juegoIdsAll.length > 0) {
+    const { data: juegos } = await supabase.from("juegos").select("id, key").in("id", juegoIdsAll);
+    (juegos ?? []).forEach((j: any) => juegosMap.set(j.id, j.key));
+  }
+
+  const categoriasMap = new Map<string, string>();
+  if (categoriaIdsAll.length > 0) {
+    const { data: categorias } = await supabase.from("categorias_torneo").select("id, key").in("id", categoriaIdsAll);
+    (categorias ?? []).forEach((c: any) => categoriasMap.set(c.id, c.key));
+  }
+
+  const ciudadesMap = new Map<string, string>();
+  if (ciudadIdsAll.length > 0) {
+    const { data: ciudades } = await supabase.from("ciudades").select("id, nombre").in("id", ciudadIdsAll);
+    (ciudades ?? []).forEach((c: any) => ciudadesMap.set(c.id, c.nombre));
+  }
+
+  const finalItems = torneosList.map((torneo) => ({
     ...torneo,
     tienda_nombre: tiendaMap.get(torneo.tienda_id) ?? null,
+    tcg_juego: torneo.juego_id ? juegosMap.get(torneo.juego_id) ?? null : null,
+    categoria: torneo.categoria_id ? categoriasMap.get(torneo.categoria_id) ?? null : null,
+    ciudad: torneo.ciudad_id ? ciudadesMap.get(torneo.ciudad_id) ?? null : null,
   }));
 
-  return Response.json({ data: items }, { status: 200 });
+  return Response.json({ data: finalItems }, { status: 200 });
 }

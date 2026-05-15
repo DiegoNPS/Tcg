@@ -1,11 +1,13 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { DireccionAutocomplete } from "@/components/ui/direccion-autocomplete";
 import { ImagenUpload } from "@/components/ui/imagen-upload";
 import { CATEGORIA_OPTIONS, TCG_OPTIONS } from "@/lib/constants";
+import { useEffect } from "react";
 import type { CategoriaTorneo, TcgJuego } from "@/types/database.types";
 
 type TorneoDefaults = {
@@ -50,6 +52,12 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
   const [descripcion, setDescripcion] = useState(defaults?.descripcion || "");
   const [tcgJuego, setTcgJuego] = useState(defaults?.tcg_juego || "pokemon");
   const [categoria, setCategoria] = useState(defaults?.categoria || "casual");
+  const [juegos, setJuegos] = useState<Array<any>>([]);
+  const [categorias, setCategorias] = useState<Array<any>>([]);
+  const [ciudades, setCiudades] = useState<Array<any>>([]);
+  const [juegoId, setJuegoId] = useState<string | null>(null);
+  const [categoriaId, setCategoriaId] = useState<string | null>(null);
+  const [ciudadId, setCiudadId] = useState<string | null>(null);
   const [direccion, setDireccion] = useState(defaults?.direccion || "");
   const [latitud, setLatitud] = useState(defaults?.latitud ?? null);
   const [longitud, setLongitud] = useState(defaults?.longitud ?? null);
@@ -70,6 +78,13 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
     }
   };
 
+  useEffect(() => {
+    // fetch lookups
+    fetch("/api/lookups/juegos").then((r) => r.json()).then((j) => setJuegos(j.data ?? [])).catch(() => {});
+    fetch("/api/lookups/categorias").then((r) => r.json()).then((c) => setCategorias(c.data ?? [])).catch(() => {});
+    fetch("/api/lookups/ciudades").then((r) => r.json()).then((c) => setCiudades(c.data ?? [])).catch(() => {});
+  }, []);
+
   const handleSubmit = async (
     event: React.FormEvent,
     publicar: boolean,
@@ -79,12 +94,15 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
     setFieldErrors({});
     setIsPending(true);
 
-    const payload = {
+    const payload: any = {
       titulo,
       descripcion,
       tcg_juego: tcgJuego,
       categoria,
-      ciudad,
+      juego_id: juegoId,
+      categoria_id: categoriaId,
+      ciudad: ciudad,
+      ciudad_id: ciudadId,
       direccion,
       fecha_inicio: fechaInicio,
       cupo_maximo: Number(cupoMaximo),
@@ -181,15 +199,30 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
           <span className="font-medium text-zinc-700">Juego</span>
           <select
             required
-            value={tcgJuego}
-            onChange={(e) => setTcgJuego(e.target.value as TcgJuego)}
+              value={juegoId ?? tcgJuego}
+              onChange={(e) => {
+                const val = e.target.value;
+                // if matches a juego id, set id; else fallback to key
+                const found = juegos.find((j: any) => j.id === val);
+                if (found) {
+                  setJuegoId(found.id);
+                  setTcgJuego(found.key);
+                } else {
+                  setJuegoId(null);
+                  setTcgJuego(val as TcgJuego);
+                }
+              }}
             className="rounded-xl border border-zinc-300 px-3 py-2.5 outline-none transition focus:border-zinc-900"
           >
-            {TCG_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {juegos.length > 0 ? (
+              juegos.map((j) => <option key={j.id} value={j.id}>{j.nombre}</option>)
+            ) : (
+              TCG_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            )}
           </select>
           <FieldError message={fieldErrors.tcg_juego} />
         </label>
@@ -198,15 +231,29 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
           <span className="font-medium text-zinc-700">Categoria</span>
           <select
             required
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value as CategoriaTorneo)}
+            value={categoriaId ?? categoria}
+            onChange={(e) => {
+              const val = e.target.value;
+              const found = categorias.find((c: any) => c.id === val);
+              if (found) {
+                setCategoriaId(found.id);
+                setCategoria(found.key);
+              } else {
+                setCategoriaId(null);
+                setCategoria(val as CategoriaTorneo);
+              }
+            }}
             className="rounded-xl border border-zinc-300 px-3 py-2.5 outline-none transition focus:border-zinc-900"
           >
-            {CATEGORIA_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {categorias.length > 0 ? (
+              categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)
+            ) : (
+              CATEGORIA_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            )}
           </select>
           <FieldError message={fieldErrors.categoria} />
         </label>
@@ -219,6 +266,28 @@ export function TorneoForm({ mode = "create", defaults }: TorneoFormProps) {
         defaultLng={defaults?.longitud ?? undefined}
         onAddressChange={handleDireccionChange}
       />
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-zinc-700">Ciudad</span>
+        <select
+          required
+          value={ciudadId ?? ciudad}
+          onChange={(e) => {
+            const val = e.target.value;
+            const found = ciudades.find((c: any) => c.id === val);
+            if (found) {
+              setCiudadId(found.id);
+              setCiudad(found.nombre);
+            } else {
+              setCiudadId(null);
+              setCiudad(val);
+            }
+          }}
+          className="rounded-xl border border-zinc-300 px-3 py-2.5 outline-none transition focus:border-zinc-900"
+        >
+          {ciudades.length > 0 ? ciudades.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>) : <option value="">Seleccionar ciudad</option>}
+        </select>
+      </label>
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">

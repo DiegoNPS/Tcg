@@ -47,13 +47,13 @@ export default async function AdminPage() {
 
   const recentTorneos = await admin
     .from("torneos")
-    .select("id, titulo, ciudad, publicado, fecha_inicio")
+    .select("id, titulo, publicado, fecha_inicio, tienda_id")
     .order("created_at", { ascending: false })
     .limit(5);
 
   const recentStores = await admin
     .from("tiendas")
-    .select("id, nombre, ciudad, owner_id")
+    .select("id, nombre, ciudad_id, owner_id")
     .order("created_at", { ascending: false })
     .limit(5);
 
@@ -112,17 +112,20 @@ export default async function AdminPage() {
           </div>
           <div className="divide-y divide-zinc-100">
             {recentTorneos.data?.length ? (
-              recentTorneos.data.map((torneo) => (
-                <div key={torneo.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                  <div>
-                    <p className="font-medium text-zinc-900">{torneo.titulo}</p>
-                    <p className="text-zinc-600">{torneo.ciudad} · {new Date(torneo.fecha_inicio).toLocaleString("es-ES")}</p>
+              recentTorneos.data.map((torneo) => {
+                const tienda = recentStores.data?.find((t) => t.id === torneo.tienda_id);
+                return (
+                  <div key={torneo.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                    <div>
+                      <p className="font-medium text-zinc-900">{torneo.titulo}</p>
+                      <p className="text-zinc-600">{tienda?.nombre ?? "Tienda independiente"} · {new Date(torneo.fecha_inicio).toLocaleString("es-ES")}</p>
+                    </div>
+                    <span className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600">
+                      {torneo.publicado ? "Publicado" : "Borrador"}
+                    </span>
                   </div>
-                  <span className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600">
-                    {torneo.publicado ? "Publicado" : "Borrador"}
-                  </span>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="px-4 py-6 text-sm text-zinc-600">No hay torneos para mostrar.</p>
             )}
@@ -140,7 +143,7 @@ export default async function AdminPage() {
               recentStores.data.map((tienda) => (
                 <div key={tienda.id} className="px-4 py-3 text-sm">
                   <p className="font-medium text-zinc-900">{tienda.nombre}</p>
-                  <p className="text-zinc-600">{tienda.ciudad}</p>
+                  <p className="text-zinc-600">{tienda.ciudad_id ?? "-"}</p>
                 </div>
               ))
             ) : (

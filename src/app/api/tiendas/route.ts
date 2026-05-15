@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
@@ -32,19 +33,33 @@ export async function POST(request: Request) {
     return Response.json({ error: "Datos de tienda inválidos" }, { status: 400 });
   }
 
+  // resolve ciudad id
+  const { data: ciudadRes, error: ciudadErr } = await supabase.rpc("get_or_create_ciudad", { p_nombre: parsed.data.ciudad } as any);
+  if (ciudadErr) return Response.json({ error: "No se pudo resolver la ciudad" }, { status: 500 });
+  const ciudadResAny = ciudadRes as any;
+  const ciudad_id = Array.isArray(ciudadResAny) ? ciudadResAny[0]?.id ?? null : ciudadResAny?.id ?? null;
+
   const { data, error } = await supabase
     .from("tiendas")
     .insert({
       owner_id: user.id,
       nombre: parsed.data.nombre,
-      ciudad: parsed.data.ciudad,
-    })
-    .select("id, owner_id, nombre, ciudad, created_at, updated_at")
+      ciudad_id,
+    } as any)
+    .select("id, owner_id, nombre, ciudad_id, created_at, updated_at")
     .single();
 
   if (error) {
     return Response.json({ error: error.message }, { status: 400 });
   }
 
-  return Response.json({ data }, { status: 201 });
+  // expand ciudad name for compatibility
+    const ciudadName = ciudad_id
+      ? ((await supabase.from("ciudades").select("nombre").eq("id", ciudad_id).maybeSingle()) as any).data?.nombre
+      : null;
+
+    const payload = (data ?? {}) as any;
+    payload.ciudad = ciudadName;
+
+    return Response.json({ data: payload }, { status: 201 });
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 
@@ -31,9 +32,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const { data: tienda, error: tiendaError } = await supabase
     .from("tiendas")
-    .select("id, nombre, ciudad")
+    .select("id, nombre, ciudad_id")
     .eq("owner_id", user.id)
     .maybeSingle();
+  const tiendaAny = tienda as any;
 
   if (tiendaError) {
     throw new Error(tiendaError.message);
@@ -60,8 +62,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const { data: torneos, error: torneosError } = await supabase
     .from("torneos")
-    .select("id, titulo, fecha_inicio, tcg_juego, categoria, ciudad, publicado")
-    .eq("tienda_id", tienda.id)
+    .select("id, titulo, fecha_inicio, juego_id, categoria_id, ciudad_id, publicado")
+    .eq("tienda_id", tiendaAny.id)
     .order("fecha_inicio", { ascending: false });
 
   if (torneosError) {
@@ -70,13 +72,48 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const errorMessage = params.error ? errorMessages[params.error] : null;
 
+  // resolve ciudad name for tienda
+  const tiendaCiudadName = tiendaAny.ciudad_id
+    ? ((await supabase.from("ciudades").select("nombre").eq("id", tiendaAny.ciudad_id).maybeSingle()) as any).data?.nombre ?? null
+    : null;
+
+  // resolve juegos/categorias/ciudades for torneos
+  const juegoIds = Array.from(new Set((torneos ?? []).map((t: any) => t.juego_id).filter(Boolean)));
+  const categoriaIds = Array.from(new Set((torneos ?? []).map((t: any) => t.categoria_id).filter(Boolean)));
+  const ciudadIds = Array.from(new Set((torneos ?? []).map((t: any) => t.ciudad_id).filter(Boolean)));
+
+  const juegosMap = new Map<string, string>();
+  if (juegoIds.length > 0) {
+    const { data: juegos } = await supabase.from("juegos").select("id, key").in("id", juegoIds);
+    (juegos ?? []).forEach((j: any) => juegosMap.set(j.id, j.key));
+  }
+
+  const categoriasMap = new Map<string, string>();
+  if (categoriaIds.length > 0) {
+    const { data: categorias } = await supabase.from("categorias_torneo").select("id, key").in("id", categoriaIds);
+    (categorias ?? []).forEach((c: any) => categoriasMap.set(c.id, c.key));
+  }
+
+  const ciudadesMap = new Map<string, string>();
+  if (ciudadIds.length > 0) {
+    const { data: ciudades } = await supabase.from("ciudades").select("id, nombre").in("id", ciudadIds);
+    (ciudades ?? []).forEach((c: any) => ciudadesMap.set(c.id, c.nombre));
+  }
+
+  const torneosWithNames = (torneos ?? []).map((torneo: any) => ({
+    ...torneo,
+    tcg_juego: torneo.juego_id ? juegosMap.get(torneo.juego_id) ?? null : null,
+    categoria: torneo.categoria_id ? categoriasMap.get(torneo.categoria_id) ?? null : null,
+    ciudad: torneo.ciudad_id ? ciudadesMap.get(torneo.ciudad_id) ?? null : null,
+  }));
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-zinc-500">Panel de tienda</p>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{tienda.nombre}</h1>
-          <p className="text-sm text-zinc-600">{tienda.ciudad}</p>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{tiendaAny.nombre}</h1>
+            <p className="text-sm text-zinc-600">{tiendaCiudadName}</p>
         </div>
         <Link
           href="/tienda/nuevo-torneo"
@@ -109,14 +146,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <h2 className="text-sm font-semibold text-zinc-900">Torneos publicados</h2>
         </div>
         <div className="divide-y divide-zinc-100">
-          {torneos?.length ? (
-            torneos.map((torneo) => (
+          {torneosWithNames?.length ? (
+            torneosWithNames.map((torneo) => (
               <article key={torneo.id} className="flex flex-col gap-1 px-4 py-3 text-sm md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-medium text-zinc-900">{torneo.titulo}</p>
-                  <p className="text-zinc-600">
-                    {torneo.tcg_juego} / {torneo.categoria} / {torneo.ciudad}
-                  </p>
+                  <p className="text-zinc-600">{torneo.tcg_juego} / {torneo.categoria} / {torneo.ciudad}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="text-zinc-500">{new Date(torneo.fecha_inicio).toLocaleString("es-ES")}</p>

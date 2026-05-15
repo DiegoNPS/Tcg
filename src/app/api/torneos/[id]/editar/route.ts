@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
@@ -21,8 +22,10 @@ const CATEGORIA_VALUES = ["local", "regional", "premier", "casual"] as const;
 const editarTorneoSchema = z.object({
   titulo: z.string().trim().min(1).max(100),
   descripcion: z.string().trim().min(1).max(1200),
-  tcg_juego: z.enum(TCG_VALUES),
-  categoria: z.enum(CATEGORIA_VALUES),
+  tcg_juego: z.enum(TCG_VALUES).optional(),
+  categoria: z.enum(CATEGORIA_VALUES).optional(),
+  juego_id: z.string().uuid().optional(),
+  categoria_id: z.string().uuid().optional(),
   ciudad: z.string().trim().min(1).max(100),
   direccion: z.string().trim().min(1).max(500),
   fecha_inicio: z.string().min(1, "La fecha es requerida"),
@@ -99,14 +102,42 @@ export async function PUT(request: Request, context: RouteContext) {
     return Response.json({ error: "Fecha no válida" }, { status: 400 });
   }
 
+  // Resolve related ids (respect provided ids)
+  let juego_id: string | null = parsed.data.juego_id ?? null;
+  if (!juego_id && parsed.data.tcg_juego) {
+    const { data: juegoRes, error: juegoErr } = await supabase.rpc("get_or_create_juego", {
+      p_key: parsed.data.tcg_juego,
+      p_nombre: parsed.data.tcg_juego,
+    } as any);
+    if (juegoErr) return Response.json({ error: "No se pudo resolver el juego" }, { status: 500 });
+    const juegoResAny = juegoRes as any;
+    juego_id = Array.isArray(juegoResAny) ? juegoResAny[0]?.id ?? null : juegoResAny?.id ?? null;
+  }
+
+  let categoria_id: string | null = parsed.data.categoria_id ?? null;
+  if (!categoria_id && parsed.data.categoria) {
+    const { data: categoriaRes, error: categoriaErr } = await supabase.rpc("get_or_create_categoria", {
+      p_key: parsed.data.categoria,
+      p_nombre: parsed.data.categoria,
+    } as any);
+    if (categoriaErr) return Response.json({ error: "No se pudo resolver la categoría" }, { status: 500 });
+    const categoriaResAny = categoriaRes as any;
+    categoria_id = Array.isArray(categoriaResAny) ? categoriaResAny[0]?.id ?? null : categoriaResAny?.id ?? null;
+  }
+
+  const { data: ciudadRes, error: ciudadErr } = await supabase.rpc("get_or_create_ciudad", { p_nombre: parsed.data.ciudad } as any);
+  if (ciudadErr) return Response.json({ error: "No se pudo resolver la ciudad" }, { status: 500 });
+  const ciudadResAny = ciudadRes as any;
+  const ciudad_id = Array.isArray(ciudadResAny) ? ciudadResAny[0]?.id ?? null : ciudadResAny?.id ?? null;
+
   const { data, error } = await supabase
     .from("torneos")
     .update({
       titulo: parsed.data.titulo,
       descripcion: parsed.data.descripcion,
-      tcg_juego: parsed.data.tcg_juego,
-      categoria: parsed.data.categoria,
-      ciudad: parsed.data.ciudad,
+      juego_id,
+      categoria_id,
+      ciudad_id,
       direccion: parsed.data.direccion,
       fecha_inicio: fecha.toISOString(),
       cupo_maximo: parsed.data.cupo_maximo,
@@ -115,7 +146,7 @@ export async function PUT(request: Request, context: RouteContext) {
       latitud: parsed.data.latitud ?? null,
       longitud: parsed.data.longitud ?? null,
       imagen_url: parsed.data.imagen_url || null,
-    })
+    } as any)
     .eq("id", parsedId.data)
     .select()
     .single();
